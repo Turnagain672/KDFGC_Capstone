@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kelowna Fish & Game Club</title>
+  <style>
+    /* Reset & base styles */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #e8f5e9;
+      color: #1b5e20;
+      line-height: 1.6;
+      font-size: 16px;
+    }
+    a {
+      color: #2e7d32;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* Header & Navigation */
+    header {
+      background-color: #1b5e20;
+      color: white;
+      padding: 1rem 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .nav-links a {
+      font-weight: 600;
+      padding: 0.5rem 0;
+      border-bottom: 2px solid transparent;
+      transition: border-color 0.3s ease;
+    }
+    .nav-links a:hover,
+    .nav-links a.active {
+      border-bottom: 2px solid #a5d6a7;
+    }
+    .btn {
+      background-color: #388e3c;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 24px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      border: none;
+      text-align: center;
+      display: inline-block;
+      margin-left: 1rem;
+      text-decoration: none;
+    }
+    .btn:hover {
+      background-color: #2e7d32;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: url('https://kdfgc.org/resources/Pictures/Moose-1024x681.jpg') center/cover no-repeat;
+      color: white;
+      padding: 6rem 1rem 4rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(27, 94, 32, 0.7);
+      z-index: 1;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      font-weight: 900;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.7);
+    }
+    .hero p {
+      font-size: 1.25rem;
+      margin-bottom: 2rem;
+      font-weight: 600;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+    }
+
+    /* Range Status */
+    .range-status {
+      background-color: #a5d6a7;
+      color: #1b5e20;
+      padding: 1rem 2rem;
+      border-radius: 16px;
+      font-weight: 700;
+      text-align: center;
+      margin: 2rem auto;
+      max-width: 600px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Sections */
+    section {
+      padding: 3rem 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    section h2 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      font-weight: 800;
+      color: #2e7d32;
+      border-bottom: 3px solid #a5d6a7;
+      padding-bottom: 0.5rem;
+      max-width: fit-content;
+    }
+
+    /* Cards and Lists */
+    .card-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background-color: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #1b5e20;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .card p {
+      margin: 0;
+      color: #4a7c4a;
+      font-weight: 500;
+    }
+
+    /* Footer */
+    footer {
+      background-color: #1b5e20;
+      color: white;
+      text-align: center;
+      padding: 1.5rem 1rem;
+      margin-top: 3rem;
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+      .hero p {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container">
+      <div class="logo">
+        <a href="#" style="color:white; font-weight:bold; font-size:1.5rem;">Kelowna Fish & Game Club</a>
+      </div>
+      <div class="nav-links">
+        <a href="#about">About</a>
+        <a href="#membership">Membership</a>
+        <a href="#events">Events</a>
+        <a href="#ranges">Ranges</a>
+        <a href="#courses">Courses</a>
+        <a href="#contact">Contact</a>
+        <a href="https://kdfgc.org/Sys/Login" target="_blank" class="btn">Member Login</a>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1>Kelowna & District Fish and Game Club</h1>
+      <p>Established 1904 – Supporting conservation, fishing, hunting, and shooting sports.</p>
+      <a href="#membership" class="btn">Join or Renew Membership</a>
+    </div>
+  </section>
+
+  <div class="range-status">
+    <p>Outdoor Range Shooting Hours: Weekdays 9 AM - 8 PM, Weekends 9 AM - 5 PM | Office Hours: Tues & Thurs 11 AM - 4 PM, Sat 9 AM - 3 PM</p>
+  </div>
+
+  <section id="about" class="container">
+    <h2>About Us</h2>
+    <p>Established in 1904, the Kelowna & District Fish and Game Club is one of the oldest clubs in British Columbia. We have a long history of supporting wildlife conservation, fishing, hunting, and shooting sports.</p>
+  </section>
+
+  <section id="membership" class="container">
+    <h2>Membership</h2>
+    <p>Become a member or renew your membership to enjoy exclusive benefits and support our conservation efforts.</p>
+    <a href="https://kdfgc.org/Join-us" class="btn">Join Now</a>
+    <a href="https://kdfgc.org/membership-renewal" class="btn" style="background-color:#2e7d32; margin-left:1rem;">Renew Membership</a>
+    <p><a href="https://kdfgc.org/resources/Documents/KDFGC%20Membership%20Handbook.pdf" target="_blank">Download Member Handbook</a></p>
+  </section>
+
+  <section id="events" class="container">
+    <h2>Upcoming Events</h2>
+    <div class="card-list">
+      <div class="card">
+        <h3>Winter Shooting Competition</h3>
+        <p>Date: January 25, 2026</p>
+        <p>Location: Main Range</p>
+        <a href="https://kdfgc.org/event-6357817" target="_blank">More Info & Registration</a>
+      </div>
+      <div class="card">
+        <h3>Youth Archery Camp</h3>
+        <p>Date: February 15, 2026</p>
+        <p>Location: Archery Range</p>
+        <a href="https://kdfgc.org/event-6384789" target="_blank">More Info & Registration</a>
+      </div>
+      <div class="card">
+        <h3>Family Fishing Day</h3>
+        <p>Date: March 10, 2026</p>
+        <p>Location: Lakefront</p>
+        <a href="https://kdfgc.org/event-6384823" target="_blank">More Info & Registration</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="ranges" class="container">
+    <h2>Ranges & Facilities</h2>
+    <p>Our club offers multiple ranges including outdoor shooting, archery, and pistol ranges with modern facilities and safety protocols.</p>
+  </section>
+
+  <section id="courses" class="container">
+    <h2>Courses & Training</h2>
+    <ul>
+      <li><a href="https://kdfgc.org/Handgun-Qualification-Course" target="_blank">Handgun Safety Qualification Course</a></li>
+      <li><a href="https://kdfgc.org/Hand-Basic-Course" target="_blank">Handgun Basic Course</a></li>
+      <li><a href="https://kdfgc.org/PAL" target="_blank">Canadian Firearms Safety Course (PAL)</a></li>
+      <li><a href="https://kdfgc.org/RPAL" target="_blank">Restricted Firearms Safety Course (RPAL)</a></li>
+      <li><a href="https://kdfgc.org/Youth-Core-Program" target="_blank">Youth Core Program</a></li>
+    </ul>
+  </section>
+
+  <section id="contact" class="container">
+    <h2>Contact Us</h2>
+    <p>Kelowna and District Fish & Game Club<br />4041 Casorso Rd.<br />Kelowna, BC, V1W 4N6</p>
+    <p>Email: <a href="mailto:info@kdfgc.org">info@kdfgc.org</a><br />Phone: 250.764.7558</p>
+  </section>
+
+  <footer>
+    <p>&copy; 2026 Kelowna Fish & Game Club. All rights reserved.</p>
+  </footer>
+</body>
+</html>
