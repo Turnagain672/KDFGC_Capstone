@@ -14,14 +14,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.capstone2.data.RangeLog
+import com.example.capstone2.data.RangeLogViewModel
 
 @Composable
-fun RangeLogScreen() {
+fun RangeLogScreen(viewModel: RangeLogViewModel = viewModel()) {
     val scrollState = rememberScrollState()
     var showAddDialog by remember { mutableStateOf(false) }
+
+    val logs by viewModel.allLogs.collectAsState(initial = emptyList())
+    val totalVisits by viewModel.totalVisits.collectAsState(initial = 0)
+    val totalRounds by viewModel.totalRounds.collectAsState(initial = 0)
 
     Column(
         modifier = Modifier
@@ -77,9 +85,9 @@ fun RangeLogScreen() {
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatCard("Total Visits", "24", "🏆")
-            StatCard("This Month", "6", "📅")
-            StatCard("Rounds Fired", "1,850", "💥")
+            StatCard("Total Visits", "$totalVisits", "🏆")
+            StatCard("This Month", "${logs.size}", "📅")
+            StatCard("Rounds Fired", "$totalRounds", "💥")
         }
 
         // Log Entries
@@ -97,45 +105,27 @@ fun RangeLogScreen() {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
 
-            LogEntry(
-                date = "Jan 15, 2026",
-                range = "Indoor Range",
-                firearm = "Glock 19",
-                rounds = 150,
-                notes = "Working on trigger control. Groupings improved at 15 yards."
-            )
-
-            LogEntry(
-                date = "Jan 12, 2026",
-                range = "Outdoor Rifle",
-                firearm = "Ruger 10/22",
-                rounds = 200,
-                notes = "Zeroed new scope at 50 yards. Great conditions."
-            )
-
-            LogEntry(
-                date = "Jan 8, 2026",
-                range = "Indoor Range",
-                firearm = "Smith & Wesson M&P",
-                rounds = 100,
-                notes = "Practice session with new holster draw."
-            )
-
-            LogEntry(
-                date = "Jan 3, 2026",
-                range = "Archery Range",
-                firearm = "Compound Bow",
-                rounds = 60,
-                notes = "3D target practice. Hit 8/10 vitals."
-            )
-
-            LogEntry(
-                date = "Dec 28, 2025",
-                range = "Outdoor Rifle",
-                firearm = "AR-15",
-                rounds = 120,
-                notes = "200 yard practice. Need to adjust windage."
-            )
+            if (logs.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No sessions logged yet.\nTap + to add your first session!",
+                        color = Color(0xFF888888),
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                logs.forEach { log ->
+                    LogEntry(
+                        log = log,
+                        onDelete = { viewModel.deleteLog(log) }
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -143,7 +133,13 @@ fun RangeLogScreen() {
 
     // Add Log Dialog
     if (showAddDialog) {
-        AddLogDialog(onDismiss = { showAddDialog = false })
+        AddLogDialog(
+            onDismiss = { showAddDialog = false },
+            onSave = { date, range, firearm, rounds, notes ->
+                viewModel.addLog(date, range, firearm, rounds, notes)
+                showAddDialog = false
+            }
+        )
     }
 }
 
@@ -177,11 +173,8 @@ fun StatCard(label: String, value: String, emoji: String) {
 
 @Composable
 fun LogEntry(
-    date: String,
-    range: String,
-    firearm: String,
-    rounds: Int,
-    notes: String
+    log: RangeLog,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -197,23 +190,37 @@ fun LogEntry(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = date,
+                    text = log.date,
                     color = Color(0xFF90EE90),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF007236))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "$rounds rds",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF007236))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "${log.rounds} rds",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = Color(0xFF888888),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
@@ -227,7 +234,7 @@ fun LogEntry(
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(text = range, color = Color.White, fontSize = 13.sp)
+                Text(text = log.range, color = Color.White, fontSize = 13.sp)
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -240,7 +247,7 @@ fun LogEntry(
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(text = firearm, color = Color.White, fontSize = 13.sp)
+                Text(text = log.firearm, color = Color.White, fontSize = 13.sp)
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -248,7 +255,7 @@ fun LogEntry(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = notes,
+                text = log.notes,
                 color = Color(0xFFAAAAAA),
                 fontSize = 12.sp,
                 lineHeight = 18.sp
@@ -258,7 +265,11 @@ fun LogEntry(
 }
 
 @Composable
-fun AddLogDialog(onDismiss: () -> Unit) {
+fun AddLogDialog(
+    onDismiss: () -> Unit,
+    onSave: (String, String, String, Int, String) -> Unit
+) {
+    var date by remember { mutableStateOf("") }
     var range by remember { mutableStateOf("") }
     var firearm by remember { mutableStateOf("") }
     var rounds by remember { mutableStateOf("") }
@@ -272,6 +283,19 @@ fun AddLogDialog(onDismiss: () -> Unit) {
         },
         text = {
             Column {
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = { Text("Date (e.g., Jan 18, 2026)", color = Color(0xFF888888)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF007236),
+                        unfocusedBorderColor = Color(0xFF444444)
+                    )
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = range,
                     onValueChange = { range = it },
@@ -328,7 +352,12 @@ fun AddLogDialog(onDismiss: () -> Unit) {
         },
         confirmButton = {
             Button(
-                onClick = onDismiss,
+                onClick = {
+                    val roundsInt = rounds.toIntOrNull() ?: 0
+                    if (date.isNotBlank() && range.isNotBlank()) {
+                        onSave(date, range, firearm, roundsInt, notes)
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))
             ) {
                 Text("SAVE")
