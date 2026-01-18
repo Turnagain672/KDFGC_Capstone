@@ -1,23 +1,295 @@
 package com.example.capstone2.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun ProfileScreen() {
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFF1A1A1A))
+            .verticalScroll(scrollState)
+    ) {
+        // Header with Profile
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF003D1F),
+                            Color(0xFF005A2B),
+                            Color(0xFF007236)
+                        )
+                    )
+                )
+                .padding(vertical = 32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Avatar
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "JD",
+                        color = Color(0xFF007236),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "John Doe",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Member since 2023",
+                    fontSize = 13.sp,
+                    color = Color(0xFFCCCCCC)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF90EE90))
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "✓ ACTIVE MEMBER",
+                        color = Color(0xFF003D1F),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Membership Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "MEMBERSHIP DETAILS",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF90EE90),
+                    letterSpacing = 1.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                MembershipRow("Member ID", "KDFGC-2023-0847")
+                MembershipRow("Membership Type", "Full Adult")
+                MembershipRow("Expiry Date", "December 31, 2026")
+                MembershipRow("Range Certified", "Indoor, Outdoor, Archery")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Quick Stats
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            ProfileStatCard("Range Visits", "24", Icons.Default.LocationOn)
+            ProfileStatCard("Events", "8", Icons.Default.Event)
+            ProfileStatCard("Courses", "3", Icons.Default.School)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Settings Section
+        Text(
+            text = "SETTINGS",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF90EE90),
+            letterSpacing = 1.sp,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsItem(Icons.Default.Person, "Edit Profile", "Update your information")
+        SettingsItem(Icons.Default.Notifications, "Notifications", "Manage alerts")
+        SettingsItem(Icons.Default.Security, "Privacy & Security", "Account settings")
+        SettingsItem(Icons.Default.CreditCard, "Renew Membership", "Expires Dec 2026")
+        SettingsItem(Icons.Default.Description, "Documents", "Certificates & waivers")
+        SettingsItem(Icons.Default.Help, "Help & Support", "FAQs and contact")
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Logout Button
+        Button(
+            onClick = { },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B0000)),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(vertical = 14.dp)
+        ) {
+            Icon(Icons.Default.Logout, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("LOG OUT", fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun MembershipRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Profile",
-            style = MaterialTheme.typography.headlineLarge
+            text = label,
+            color = Color(0xFF888888),
+            fontSize = 13.sp
         )
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+    HorizontalDivider(color = Color(0xFF333333))
+}
+
+@Composable
+fun ProfileStatCard(label: String, value: String, icon: ImageVector) {
+    Card(
+        modifier = Modifier.width(105.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = Color(0xFF007236),
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                color = Color(0xFF90EE90),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = label,
+                color = Color(0xFF888888),
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingsItem(icon: ImageVector, title: String, subtitle: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF007236)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = subtitle,
+                    color = Color(0xFF888888),
+                    fontSize = 11.sp
+                )
+            }
+
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFF888888),
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
