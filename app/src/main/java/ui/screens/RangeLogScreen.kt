@@ -1,5 +1,8 @@
 package com.example.capstone2.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,11 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.capstone2.data.RangeLog
 import com.example.capstone2.data.RangeLogViewModel
 
@@ -131,12 +135,11 @@ fun RangeLogScreen(viewModel: RangeLogViewModel = viewModel()) {
         }
     }
 
-    // Add Log Dialog
     if (showAddDialog) {
         AddLogDialog(
             onDismiss = { showAddDialog = false },
-            onSave = { date, range, firearm, rounds, notes ->
-                viewModel.addLog(date, range, firearm, rounds, notes)
+            onSave = { date, range, firearm, rounds, notes, photoUri ->
+                viewModel.addLog(date, range, firearm, rounds, notes, photoUri)
                 showAddDialog = false
             }
         )
@@ -226,6 +229,20 @@ fun LogEntry(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            // Show photo if exists
+            if (!log.photoUri.isNullOrEmpty()) {
+                AsyncImage(
+                    model = log.photoUri,
+                    contentDescription = "Session photo",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.LocationOn,
@@ -267,13 +284,20 @@ fun LogEntry(
 @Composable
 fun AddLogDialog(
     onDismiss: () -> Unit,
-    onSave: (String, String, String, Int, String) -> Unit
+    onSave: (String, String, String, Int, String, String?) -> Unit
 ) {
     var date by remember { mutableStateOf("") }
     var range by remember { mutableStateOf("") }
     var firearm by remember { mutableStateOf("") }
     var rounds by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        photoUri = uri
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -282,7 +306,7 @@ fun AddLogDialog(
             Text("Add Range Session", color = Color.White, fontWeight = FontWeight.Bold)
         },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = date,
                     onValueChange = { date = it },
@@ -348,6 +372,33 @@ fun AddLogDialog(
                         unfocusedBorderColor = Color(0xFF444444)
                     )
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Photo button
+                OutlinedButton(
+                    onClick = { photoPickerLauncher.launch("image/*") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF90EE90))
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (photoUri != null) "Photo Selected ✓" else "Add Photo from Gallery")
+                }
+
+                // Show preview
+                if (photoUri != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    AsyncImage(
+                        model = photoUri,
+                        contentDescription = "Selected photo",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
         },
         confirmButton = {
@@ -355,7 +406,7 @@ fun AddLogDialog(
                 onClick = {
                     val roundsInt = rounds.toIntOrNull() ?: 0
                     if (date.isNotBlank() && range.isNotBlank()) {
-                        onSave(date, range, firearm, roundsInt, notes)
+                        onSave(date, range, firearm, roundsInt, notes, photoUri?.toString())
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))

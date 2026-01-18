@@ -51,58 +51,182 @@ fun EventsScreen() {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Club activities and training sessions",
+                    text = "January 2026 • Kelowna & District Fish and Game Club",
                     fontSize = 12.sp,
                     color = Color(0xFFCCCCCC)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Events List
+        // This Week
+        SectionHeader("THIS WEEK")
+
+        EventCard(
+            title = "Sunday Night Archery League",
+            date = "Sunday, January 19, 2026",
+            time = "6:00 PM - 9:00 PM",
+            location = "Indoor Archery Range",
+            description = "Session 3 of 13. Weekly league competition for all skill levels.",
+            category = "Archery"
+        )
+
+        EventCard(
+            title = "Open Archery",
+            date = "Monday, January 20, 2026",
+            time = "6:00 PM - 9:00 PM",
+            location = "Archery Range",
+            description = "Session 9 of 15. Open practice for members.",
+            category = "Archery"
+        )
+
         EventCard(
             title = "Precision Pistol BCTSA",
-            date = "January 14, 2026",
+            date = "Tuesday, January 21, 2026",
             time = "6:00 PM - 9:00 PM",
-            location = "Indoor Range",
-            description = "Monthly precision pistol competition. All skill levels welcome."
+            location = "Indoor Pistol Range",
+            description = "BC Target Sports Association precision pistol competition.",
+            category = "Pistol"
+        )
+
+        EventCard(
+            title = "Handgun 1500 (PPC)",
+            date = "Wednesday, January 22, 2026",
+            time = "6:00 PM - 9:00 PM",
+            location = "Pistol Range",
+            description = "Police Pistol Combat style competition. All skill levels.",
+            category = "Pistol"
+        )
+
+        EventCard(
+            title = "IPSC (IPSC BC)",
+            date = "Thursday, January 23, 2026",
+            time = "6:00 PM - 9:00 PM",
+            location = "Action Pistol Bay",
+            description = "International Practical Shooting Confederation match.",
+            category = "Pistol"
+        )
+
+        EventCard(
+            title = "Trapshooting",
+            date = "Saturday, January 25, 2026",
+            time = "10:00 AM - 2:00 PM",
+            location = "Trap Range",
+            description = "Weekly trap shooting. Shells available for purchase.",
+            category = "Shotgun"
         )
 
         EventCard(
             title = "New Member Orientation",
-            date = "January 18, 2026",
+            date = "Saturday, January 25, 2026",
             time = "10:00 AM - 11:30 AM",
             location = "Clubhouse",
-            description = "Mandatory orientation for new members. Learn range rules and safety."
+            description = "Mandatory orientation for new members. Registration required. This training is a club and legal requirement prior to shooting unsupervised.",
+            category = "Training"
+        )
+
+        // Courses Section
+        SectionHeader("COURSES")
+
+        EventCard(
+            title = "Canadian Firearms Safety Course (PAL)",
+            date = "Saturday, January 25, 2026",
+            time = "9:00 AM - 5:00 PM",
+            location = "Clubhouse",
+            description = "Non-Restricted PAL course. Certification for firearm possession and acquisition.",
+            category = "Course"
         )
 
         EventCard(
-            title = "Handgun Safety Course",
-            date = "January 20, 2026",
+            title = "Handgun Safety Qualification Course",
+            date = "Saturday, February 1, 2026",
             time = "9:00 AM - 4:00 PM",
             location = "Indoor Range",
-            description = "Comprehensive handgun safety training. Certification provided."
+            description = "Required qualification for handgun use at the club.",
+            category = "Course"
+        )
+
+        // Coming Up Section
+        SectionHeader("COMING UP")
+
+        EventCard(
+            title = "Women Pistol Discipline",
+            date = "Saturday, February 1, 2026",
+            time = "10:00 AM - 12:00 PM",
+            location = "Pistol Range",
+            description = "Women's pistol training and practice session.",
+            category = "Pistol"
         )
 
         EventCard(
             title = "Youth Core Program",
-            date = "January 25, 2026",
-            time = "10:00 AM - 12:00 PM",
-            location = "Outdoor Range",
-            description = "Youth shooting sports introduction. Ages 12-17. Parent must attend."
+            date = "Saturday, February 1, 2026",
+            time = "9:00 AM - 12:00 PM",
+            location = "Various Ranges",
+            description = "Youth shooting sports program. Ages 12-17.",
+            category = "Youth"
         )
 
         EventCard(
-            title = "RPAL Course",
-            date = "February 1, 2026",
-            time = "8:00 AM - 5:00 PM",
-            location = "Clubhouse",
-            description = "Restricted Possession and Acquisition License course."
+            title = "Precision Rifle",
+            date = "Saturday, February 1, 2026",
+            time = "9:00 AM - 4:00 PM",
+            location = "Outdoor Rifle Range",
+            description = "Long range precision rifle practice and competition.",
+            category = "Rifle"
+        )
+
+        EventCard(
+            title = "Target Rimfire",
+            date = "Saturday, February 1, 2026",
+            time = "10:00 AM - 12:00 PM",
+            location = "Rifle Range",
+            description = "Rimfire rifle target shooting for all skill levels.",
+            category = "Rifle"
+        )
+
+        EventCard(
+            title = "Junior Archery (BCAA JOP)",
+            date = "Saturday, February 1, 2026",
+            time = "9:00 AM - 10:30 AM",
+            location = "Archery Range",
+            description = "Session 15 of 25. BC Archery Association Junior Olympic Program.",
+            category = "Youth"
+        )
+
+        EventCard(
+            title = "Adult Archery (BCAA)",
+            date = "Saturday, February 1, 2026",
+            time = "10:30 AM - 12:00 PM",
+            location = "Archery Range",
+            description = "Session 15 of 25. BC Archery Association adult program.",
+            category = "Archery"
+        )
+
+        EventCard(
+            title = "Recreational Pistol",
+            date = "Saturday, February 8, 2026",
+            time = "1:00 PM - 4:00 PM",
+            location = "Pistol Range",
+            description = "Improve your pistol skills. Open to all members.",
+            category = "Pistol"
         )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
+}
+
+@Composable
+fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF90EE90),
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+    )
 }
 
 @Composable
@@ -111,12 +235,24 @@ fun EventCard(
     date: String,
     time: String,
     location: String,
-    description: String
+    description: String,
+    category: String
 ) {
+    val categoryColor = when (category) {
+        "Archery" -> Color(0xFF4CAF50)
+        "Pistol" -> Color(0xFF2196F3)
+        "Rifle" -> Color(0xFFFF9800)
+        "Shotgun" -> Color(0xFF9C27B0)
+        "Course" -> Color(0xFFE91E63)
+        "Training" -> Color(0xFFFFEB3B)
+        "Youth" -> Color(0xFF00BCD4)
+        else -> Color(0xFF007236)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
     ) {
@@ -128,12 +264,32 @@ fun EventCard(
                     .background(Color(0xFF007236))
                     .padding(12.dp)
             ) {
-                Text(
-                    text = title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(categoryColor)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = category,
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
 
             // Card Content

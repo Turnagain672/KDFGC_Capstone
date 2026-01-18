@@ -100,11 +100,11 @@ fun HomeScreen() {
             NavTab("HOME", true)
             NavTab("EVENTS", false)
             NavTab("RANGES", false)
-            NavTab("CLUBS", false)
+            NavTab("COURSES", false)
             NavTab("ABOUT", false)
         }
 
-        // Hero Section (gradient instead of image)
+        // Hero Section
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -135,35 +135,78 @@ fun HomeScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Range Hours Card
+        InfoCard(title = "🕐 RANGE HOURS") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("Outdoor Range", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Weekdays: 9 AM - 8 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                    Text("(or dusk, if earlier)", color = Color(0xFF888888), fontSize = 10.sp)
+                    Text("Weekends: 9 AM - 5 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                }
+                Column {
+                    Text("Office Hours", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Tue & Thu: 11 AM - 4 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                    Text("Saturday: 9 AM - 3 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                }
+            }
+        }
+
         // Range Updates Card
         InfoCard(title = "📢 RANGE UPDATES") {
             Text(
-                text = "New Member Orientations every second Saturday 10:00-11:30. Registration required.",
+                text = "New Member Orientations are every second Saturday from 10:00 to 11:30. Please register online. This training is a club and legal requirement for new members prior to shooting unsupervised at the range.",
                 color = Color(0xFFCCCCCC),
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 lineHeight = 20.sp
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = Color(0xFF444444))
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Hours: Weekdays 9AM–8PM • Weekends 9AM–5PM",
-                color = Color(0xFF90EE90),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
             )
         }
 
         // Upcoming Events Card
         InfoCard(title = "📅 UPCOMING EVENTS") {
-            EventItem("Precision Pistol BCTSA", "Jan 14 • 6:00 PM")
-            EventItem("New Member Orientation", "Jan 18 • 10:00 AM")
-            EventItem("Handgun Safety Course", "Jan 20 • 9:00 AM")
+            EventItem("Sunday Night Archery League", "Session 3 of 13 • Indoor Range")
+            EventItem("Open Archery", "Session 9 of 15 • Archery Range")
+            EventItem("Junior Archery (BCAA JOP)", "Session 15 of 25 • Archery Range")
+            EventItem("Adult Archery (BCAA)", "Session 15 of 25 • Archery Range")
+            EventItem("Trapshooting", "Saturdays • Trap Range")
+            EventItem("Precision Rifle", "Outdoor Range")
         }
 
-        // Facilities
+        // Featured News
+        InfoCard(title = "📰 FEATURED NEWS") {
+            Text(
+                text = "KDFGC Pistol Members, Recreational Pistol",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Improve Your Pistol Skills",
+                color = Color(0xFF90EE90),
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFF333333))
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Youth Core Program This Winter",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Programs available for youth members",
+                color = Color(0xFF888888),
+                fontSize = 12.sp
+            )
+        }
+
+        // Courses
         Text(
-            text = "OUR FACILITIES",
+            text = "COURSES & TRAINING",
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF90EE90),
@@ -174,13 +217,52 @@ fun HomeScreen() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            CourseChip("PAL Course")
+            CourseChip("RPAL Course")
+            CourseChip("Handgun Safety")
+            CourseChip("Pistol Qualification")
+            CourseChip("Youth Core Program")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Facilities
+        Text(
+            text = "OUR FACILITIES",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF90EE90),
+            letterSpacing = 2.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            FeatureIcon("🎯", "Indoor")
-            FeatureIcon("🔫", "Outdoor")
+            FeatureIcon("🎯", "Pistol")
+            FeatureIcon("🔫", "Rifle")
             FeatureIcon("🏹", "Archery")
-            FeatureIcon("🎓", "Training")
+            FeatureIcon("🥏", "Trap")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Contact Info
+        InfoCard(title = "📍 CONTACT US") {
+            Text("Kelowna and District Fish & Game Club", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("4041 Casorso Rd.", color = Color(0xFFCCCCCC), fontSize = 13.sp)
+            Text("Kelowna, BC, V1W 4N6", color = Color(0xFFCCCCCC), fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("📧 info@kdfgc.org", color = Color(0xFF90EE90), fontSize = 13.sp)
+            Text("📞 250.764.7558", color = Color(0xFF90EE90), fontSize = 13.sp)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -269,12 +351,29 @@ fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun EventItem(title: String, time: String) {
+fun EventItem(title: String, details: String) {
     Column(modifier = Modifier.padding(vertical = 6.dp)) {
         Text(text = title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text(text = time, color = Color(0xFF888888), fontSize = 11.sp)
+        Text(text = details, color = Color(0xFF888888), fontSize = 11.sp)
     }
     HorizontalDivider(color = Color(0xFF333333))
+}
+
+@Composable
+fun CourseChip(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF2A2A2A))
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = text,
+            color = Color(0xFF90EE90),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
 }
 
 @Composable

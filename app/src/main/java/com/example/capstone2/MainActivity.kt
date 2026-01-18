@@ -49,30 +49,35 @@ fun MainApp() {
         BottomNavItem("profile", "Profile", Icons.Default.Person)
     )
 
+    // Routes that show bottom nav
+    val showBottomNav = currentRoute in bottomNavItems.map { it.route }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                bottomNavItems.forEach { item ->
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
-                        selected = currentRoute == item.route,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo("home") { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
+            if (showBottomNav) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    bottomNavItems.forEach { item ->
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) },
+                            selected = currentRoute == item.route,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo("home") { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -86,7 +91,13 @@ fun MainApp() {
             composable("events") { EventsScreen() }
             composable("forum") { ForumScreen() }
             composable("rangelog") { RangeLogScreen() }
-            composable("profile") { ProfileScreen() }
+            composable("profile") { ProfileScreen(navController = navController) }
+            composable("editprofile") { EditProfileScreen(navController = navController) }
+            composable("notifications") { NotificationsScreen(navController = navController) }
+            composable("privacy") { PrivacyScreen(navController = navController) }
+            composable("renew") { RenewScreen(navController = navController) }
+            composable("documents") { DocumentsScreen(navController = navController) }
+            composable("help") { HelpScreen(navController = navController) }
         }
     }
 }

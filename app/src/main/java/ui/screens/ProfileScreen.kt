@@ -1,6 +1,7 @@
 package com.example.capstone2.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -19,9 +20,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavController) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -47,7 +49,6 @@ fun ProfileScreen() {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Avatar
                 Box(
                     modifier = Modifier
                         .size(90.dp)
@@ -140,6 +141,37 @@ fun ProfileScreen() {
             ProfileStatCard("Courses", "3", Icons.Default.School)
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Certifications Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "CERTIFICATIONS & QUALIFICATIONS",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF90EE90),
+                    letterSpacing = 1.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                CertRow("PAL (Non-Restricted)", true)
+                CertRow("RPAL (Restricted)", true)
+                CertRow("New Member Orientation", true)
+                CertRow("Handgun Safety Qualification", true)
+                CertRow("Pistol Safety Qualification", false)
+                CertRow("Handgun Basic Course", false)
+                CertRow("Handgun Level 2 Course", false)
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
         // Settings Section
@@ -154,12 +186,12 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        SettingsItem(Icons.Default.Person, "Edit Profile", "Update your information")
-        SettingsItem(Icons.Default.Notifications, "Notifications", "Manage alerts")
-        SettingsItem(Icons.Default.Security, "Privacy & Security", "Account settings")
-        SettingsItem(Icons.Default.CreditCard, "Renew Membership", "Expires Dec 2026")
-        SettingsItem(Icons.Default.Description, "Documents", "Certificates & waivers")
-        SettingsItem(Icons.Default.Help, "Help & Support", "FAQs and contact")
+        SettingsItem(Icons.Default.Person, "Edit Profile", "Update your information") { navController.navigate("editprofile") }
+        SettingsItem(Icons.Default.Notifications, "Notifications", "Manage alerts") { navController.navigate("notifications") }
+        SettingsItem(Icons.Default.Security, "Privacy & Security", "Account settings") { navController.navigate("privacy") }
+        SettingsItem(Icons.Default.CreditCard, "Renew Membership", "Expires Dec 2026") { navController.navigate("renew") }
+        SettingsItem(Icons.Default.Description, "Documents", "Certificates & waivers") { navController.navigate("documents") }
+        SettingsItem(Icons.Default.Help, "Help & Support", "FAQs and contact") { navController.navigate("help") }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -190,19 +222,38 @@ fun MembershipRow(label: String, value: String) {
             .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = label,
-            color = Color(0xFF888888),
-            fontSize = 13.sp
-        )
-        Text(
-            text = value,
-            color = Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Text(text = label, color = Color(0xFF888888), fontSize = 13.sp)
+        Text(text = value, color = Color(0xFF90EE90), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
     HorizontalDivider(color = Color(0xFF333333))
+}
+
+@Composable
+fun CertRow(name: String, completed: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (completed) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (completed) Color(0xFF4CAF50) else Color(0xFF555555),
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(text = name, color = if (completed) Color.White else Color(0xFF888888), fontSize = 13.sp)
+        }
+        Text(
+            text = if (completed) "✓" else "—",
+            color = if (completed) Color(0xFF4CAF50) else Color(0xFF555555),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }
 
 @Composable
@@ -216,34 +267,21 @@ fun ProfileStatCard(label: String, value: String, icon: ImageVector) {
             modifier = Modifier.padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = Color(0xFF007236),
-                modifier = Modifier.size(28.dp)
-            )
+            Icon(icon, contentDescription = null, tint = Color(0xFF007236), modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                color = Color(0xFF90EE90),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = label,
-                color = Color(0xFF888888),
-                fontSize = 10.sp
-            )
+            Text(text = value, color = Color(0xFF90EE90), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(text = label, color = Color(0xFF888888), fontSize = 10.sp)
         }
     }
 }
 
 @Composable
-fun SettingsItem(icon: ImageVector, title: String, subtitle: String) {
+fun SettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
     ) {
@@ -260,36 +298,17 @@ fun SettingsItem(icon: ImageVector, title: String, subtitle: String) {
                     .background(Color(0xFF007236)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
             }
 
             Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = subtitle,
-                    color = Color(0xFF888888),
-                    fontSize = 11.sp
-                )
+                Text(text = title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = subtitle, color = Color(0xFF888888), fontSize = 11.sp)
             }
 
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color(0xFF888888),
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF888888), modifier = Modifier.size(20.dp))
         }
     }
 }
