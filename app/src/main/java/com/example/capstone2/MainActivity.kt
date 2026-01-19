@@ -49,7 +49,6 @@ fun MainApp() {
         BottomNavItem("profile", "Profile", Icons.Default.Person)
     )
 
-    // Routes that show bottom nav
     val showBottomNav = currentRoute in bottomNavItems.map { it.route }
 
     Scaffold(
@@ -87,7 +86,7 @@ fun MainApp() {
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("home") { HomeScreen() }
+            composable("home") { HomeScreen(navController = navController) }
             composable("events") { EventsScreen() }
             composable("forum") { ForumScreen() }
             composable("rangelog") { RangeLogScreen() }
@@ -98,6 +97,19 @@ fun MainApp() {
             composable("renew") { RenewScreen(navController = navController) }
             composable("documents") { DocumentsScreen(navController = navController) }
             composable("help") { HelpScreen(navController = navController) }
+            composable("login") { LoginScreen(navController = navController) }
+            composable("join") { JoinScreen(navController = navController) }
+            composable("ranges") { RangesScreen(navController = navController) }
+            composable("courses") { CoursesScreen(navController = navController) }
+            composable("about") { AboutScreen(navController = navController) }
+            composable("palcourse") { PALCourseScreen(navController = navController) }
+            composable("rpalcourse") { RPALCourseScreen(navController = navController) }
+            composable("handgunsafety") { HandgunSafetyScreen(navController = navController) }
+            composable("pistolqual") { PistolQualScreen(navController = navController) }
+            composable("pistolrange") { PistolRangeScreen(navController = navController) }
+            composable("riflerange") { RifleRangeScreen(navController = navController) }
+            composable("archeryrange") { ArcheryRangeScreen(navController = navController) }
+            composable("traprange") { TrapRangeScreen(navController = navController) }
         }
     }
 }

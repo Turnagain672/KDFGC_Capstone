@@ -1,6 +1,7 @@
 package com.example.capstone2.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,9 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavController) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -38,12 +40,12 @@ fun HomeScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                TopNavItem("HOME")
-                TopNavItem("JOIN US")
-                TopNavItem("RENEW")
+                TopNavItem("HOME") { navController.navigate("home") }
+                TopNavItem("JOIN US") { navController.navigate("join") }
+                TopNavItem("RENEW") { navController.navigate("renew") }
             }
             Button(
-                onClick = { },
+                onClick = { navController.navigate("login") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(20.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
@@ -97,11 +99,11 @@ fun HomeScreen() {
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.Center
         ) {
-            NavTab("HOME", true)
-            NavTab("EVENTS", false)
-            NavTab("RANGES", false)
-            NavTab("COURSES", false)
-            NavTab("ABOUT", false)
+            NavTab("HOME", true) { }
+            NavTab("EVENTS", false) { navController.navigate("events") }
+            NavTab("RANGES", false) { navController.navigate("ranges") }
+            NavTab("COURSES", false) { navController.navigate("courses") }
+            NavTab("ABOUT", false) { navController.navigate("about") }
         }
 
         // Hero Section
@@ -127,8 +129,8 @@ fun HomeScreen() {
                 Text("🦌", fontSize = 48.sp)
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CTAButton("BECOME A MEMBER")
-                    CTAButton("RENEW")
+                    CTAButton("BECOME A MEMBER") { navController.navigate("join") }
+                    CTAButton("RENEW") { navController.navigate("renew") }
                 }
             }
         }
@@ -221,11 +223,11 @@ fun HomeScreen() {
                 .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            CourseChip("PAL Course")
-            CourseChip("RPAL Course")
-            CourseChip("Handgun Safety")
-            CourseChip("Pistol Qualification")
-            CourseChip("Youth Core Program")
+            CourseChip("PAL Course") { navController.navigate("palcourse") }
+            CourseChip("RPAL Course") { navController.navigate("rpalcourse") }
+            CourseChip("Handgun Safety") { navController.navigate("handgunsafety") }
+            CourseChip("Pistol Qualification") { navController.navigate("pistolqual") }
+            CourseChip("Youth Core Program") { navController.navigate("courses") }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -246,10 +248,10 @@ fun HomeScreen() {
                 .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            FeatureIcon("🎯", "Pistol")
-            FeatureIcon("🔫", "Rifle")
-            FeatureIcon("🏹", "Archery")
-            FeatureIcon("🥏", "Trap")
+            FeatureIcon("🎯", "Pistol") { navController.navigate("pistolrange") }
+            FeatureIcon("🔫", "Rifle") { navController.navigate("riflerange") }
+            FeatureIcon("🏹", "Archery") { navController.navigate("archeryrange") }
+            FeatureIcon("🥏", "Trap") { navController.navigate("traprange") }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -270,26 +272,24 @@ fun HomeScreen() {
 }
 
 @Composable
-fun TopNavItem(text: String) {
+fun TopNavItem(text: String, onClick: () -> Unit) {
     Text(
         text = text,
         color = Color.White,
         fontSize = 10.sp,
-        fontWeight = FontWeight.SemiBold
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.clickable { onClick() }
     )
 }
 
 @Composable
-fun NavTab(text: String, selected: Boolean) {
+fun NavTab(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .padding(horizontal = 4.dp, vertical = 6.dp)
-            .then(
-                if (selected) Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFF007236))
-                else Modifier
-            )
+            .clip(RoundedCornerShape(4.dp))
+            .then(if (selected) Modifier.background(Color(0xFF007236)) else Modifier)
+            .clickable { onClick() }
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
@@ -302,9 +302,9 @@ fun NavTab(text: String, selected: Boolean) {
 }
 
 @Composable
-fun CTAButton(text: String) {
+fun CTAButton(text: String, onClick: () -> Unit) {
     Button(
-        onClick = { },
+        onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
         shape = RoundedCornerShape(25.dp),
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
@@ -360,11 +360,12 @@ fun EventItem(title: String, details: String) {
 }
 
 @Composable
-fun CourseChip(text: String) {
+fun CourseChip(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(Color(0xFF2A2A2A))
+            .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Text(
@@ -377,12 +378,13 @@ fun CourseChip(text: String) {
 }
 
 @Composable
-fun FeatureIcon(emoji: String, label: String) {
+fun FeatureIcon(emoji: String, label: String, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
             .background(Color(0xFF2A2A2A))
+            .clickable { onClick() }
             .padding(12.dp)
     ) {
         Text(text = emoji, fontSize = 26.sp)
