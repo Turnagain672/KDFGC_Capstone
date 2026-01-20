@@ -39,10 +39,11 @@ fun HomeScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TopNavItem("HOME") { navController.navigate("home") }
                 TopNavItem("JOIN US") { navController.navigate("join") }
                 TopNavItem("RENEW") { navController.navigate("renew") }
+                TopNavItem("STORE") { navController.navigate("store") }
             }
             Button(
                 onClick = { navController.navigate("login") },
@@ -103,6 +104,7 @@ fun HomeScreen(navController: NavController) {
             NavTab("EVENTS", false) { navController.navigate("events") }
             NavTab("RANGES", false) { navController.navigate("ranges") }
             NavTab("COURSES", false) { navController.navigate("courses") }
+            NavTab("STORE", false) { navController.navigate("store") }
             NavTab("ABOUT", false) { navController.navigate("about") }
         }
 

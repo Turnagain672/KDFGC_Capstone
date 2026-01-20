@@ -2,7 +2,10 @@ package com.example.capstone2.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
@@ -14,25 +17,47 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, userViewModel: UserViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showRegister by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+    val currentUser by userViewModel.currentUser.collectAsState()
+
+    // If logged in, navigate to appropriate screen
+    LaunchedEffect(currentUser) {
+        currentUser?.let { user ->
+            if (user.isAdmin) {
+                navController.navigate("adminpanel") {
+                    popUpTo("login") { inclusive = true }
+                }
+            } else {
+                navController.navigate("myaccount") {
+                    popUpTo("login") { inclusive = true }
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF1A1A1A))
     ) {
-        // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -50,7 +75,7 @@ fun LoginScreen(navController: NavController) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
             Text(
-                text = "Member Login",
+                text = if (showRegister) "Create Account" else "Log In",
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -61,100 +86,292 @@ fun LoginScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text("🦌", fontSize = 64.sp)
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Text(
-                text = "Welcome Back",
+                "KDFGC Member Portal",
                 color = Color.White,
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-
             Text(
-                text = "Sign in to your KDFGC account",
+                if (showRegister) "Create your account" else "Sign in to your account",
                 color = Color(0xFF888888),
                 fontSize = 14.sp
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email", color = Color(0xFF888888)) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF007236),
-                    unfocusedBorderColor = Color(0xFF444444)
-                ),
-                shape = RoundedCornerShape(10.dp)
-            )
+            if (showRegister) {
+                RegisterForm(
+                    userViewModel = userViewModel,
+                    onSuccess = { showRegister = false },
+                    onError = { errorMessage = it }
+                )
+            } else {
+                // Email
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it; errorMessage = null },
+                    label = { Text("Email") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF007236),
+                        unfocusedBorderColor = Color(0xFF444444),
+                        focusedLabelColor = Color(0xFF90EE90),
+                        unfocusedLabelColor = Color(0xFF888888),
+                        cursorColor = Color(0xFF90EE90),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password", color = Color(0xFF888888)) },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null,
-                            tint = Color(0xFF888888)
-                        )
+                // Password
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it; errorMessage = null },
+                    label = { Text("Password") },
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { showPassword = !showPassword }) {
+                            Icon(
+                                if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = null,
+                                tint = Color(0xFF888888)
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF007236),
+                        unfocusedBorderColor = Color(0xFF444444),
+                        focusedLabelColor = Color(0xFF90EE90),
+                        unfocusedLabelColor = Color(0xFF888888),
+                        cursorColor = Color(0xFF90EE90),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                errorMessage?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(it, color = Color(0xFFFF5722), fontSize = 13.sp)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        if (email.isNotBlank() && password.isNotBlank()) {
+                            isLoading = true
+                            scope.launch {
+                                val success = userViewModel.login(email, password)
+                                isLoading = false
+                                if (!success) {
+                                    errorMessage = "Invalid email or password"
+                                }
+                            }
+                        } else {
+                            errorMessage = "Please fill in all fields"
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(vertical = 14.dp),
+                    enabled = !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("LOG IN", fontWeight = FontWeight.Bold)
                     }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF007236),
-                    unfocusedBorderColor = Color(0xFF444444)
-                ),
-                shape = RoundedCornerShape(10.dp)
-            )
+                }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(
-                onClick = { },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text("Forgot Password?", color = Color(0xFF007236), fontSize = 13.sp)
+                // Admin hint
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Demo Accounts:", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Admin: admin@kdfgc.org / admin123", color = Color(0xFFCCCCCC), fontSize = 11.sp)
+                        Text("Or create a new member account below", color = Color(0xFF888888), fontSize = 11.sp)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { navController.navigate("home") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("LOG IN", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            TextButton(onClick = { showRegister = !showRegister; errorMessage = null }) {
+                Text(
+                    if (showRegister) "Already have an account? Log In" else "Don't have an account? Register",
+                    color = Color(0xFF90EE90)
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
 
-            Row {
-                Text("Don't have an account? ", color = Color(0xFF888888), fontSize = 13.sp)
-                TextButton(onClick = { navController.navigate("join") }) {
-                    Text("Join Now", color = Color(0xFF007236), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+@Composable
+fun RegisterForm(
+    userViewModel: UserViewModel,
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit
+) {
+    var fullName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var memberNumber by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    OutlinedTextField(
+        value = fullName,
+        onValueChange = { fullName = it },
+        label = { Text("Full Name") },
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007236),
+            unfocusedBorderColor = Color(0xFF444444),
+            focusedLabelColor = Color(0xFF90EE90),
+            unfocusedLabelColor = Color(0xFF888888),
+            cursorColor = Color(0xFF90EE90),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        shape = RoundedCornerShape(10.dp)
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = email,
+        onValueChange = { email = it },
+        label = { Text("Email") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007236),
+            unfocusedBorderColor = Color(0xFF444444),
+            focusedLabelColor = Color(0xFF90EE90),
+            unfocusedLabelColor = Color(0xFF888888),
+            cursorColor = Color(0xFF90EE90),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        shape = RoundedCornerShape(10.dp)
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = memberNumber,
+        onValueChange = { memberNumber = it },
+        label = { Text("Member Number") },
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007236),
+            unfocusedBorderColor = Color(0xFF444444),
+            focusedLabelColor = Color(0xFF90EE90),
+            unfocusedLabelColor = Color(0xFF888888),
+            cursorColor = Color(0xFF90EE90),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        shape = RoundedCornerShape(10.dp)
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = password,
+        onValueChange = { password = it },
+        label = { Text("Password") },
+        visualTransformation = PasswordVisualTransformation(),
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007236),
+            unfocusedBorderColor = Color(0xFF444444),
+            focusedLabelColor = Color(0xFF90EE90),
+            unfocusedLabelColor = Color(0xFF888888),
+            cursorColor = Color(0xFF90EE90),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        shape = RoundedCornerShape(10.dp)
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedTextField(
+        value = confirmPassword,
+        onValueChange = { confirmPassword = it },
+        label = { Text("Confirm Password") },
+        visualTransformation = PasswordVisualTransformation(),
+        modifier = Modifier.fillMaxWidth(),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF007236),
+            unfocusedBorderColor = Color(0xFF444444),
+            focusedLabelColor = Color(0xFF90EE90),
+            unfocusedLabelColor = Color(0xFF888888),
+            cursorColor = Color(0xFF90EE90),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        shape = RoundedCornerShape(10.dp)
+    )
+
+    Spacer(modifier = Modifier.height(24.dp))
+
+    Button(
+        onClick = {
+            when {
+                fullName.isBlank() || email.isBlank() || password.isBlank() -> onError("Please fill in all fields")
+                password != confirmPassword -> onError("Passwords don't match")
+                password.length < 6 -> onError("Password must be at least 6 characters")
+                else -> {
+                    isLoading = true
+                    scope.launch {
+                        val success = userViewModel.register(email, password, fullName, memberNumber)
+                        isLoading = false
+                        if (success) {
+                            onSuccess()
+                        } else {
+                            onError("Email already exists")
+                        }
+                    }
                 }
             }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
+        shape = RoundedCornerShape(10.dp),
+        contentPadding = PaddingValues(vertical = 14.dp),
+        enabled = !isLoading
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        } else {
+            Text("CREATE ACCOUNT", fontWeight = FontWeight.Bold)
         }
     }
 }

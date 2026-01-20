@@ -19,9 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
-fun EventsScreen() {
+fun EventsScreen(navController: NavController) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -30,7 +31,6 @@ fun EventsScreen() {
             .background(Color(0xFF1A1A1A))
             .verticalScroll(scrollState)
     ) {
-        // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -60,7 +60,6 @@ fun EventsScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // This Week
         SectionHeader("THIS WEEK")
 
         EventCard(
@@ -69,7 +68,8 @@ fun EventsScreen() {
             time = "6:00 PM - 9:00 PM",
             location = "Indoor Archery Range",
             description = "Session 3 of 13. Weekly league competition for all skill levels.",
-            category = "Archery"
+            category = "Archery",
+            onRegister = { navController.navigate("register/sunday-night-archery-league") }
         )
 
         EventCard(
@@ -78,7 +78,8 @@ fun EventsScreen() {
             time = "6:00 PM - 9:00 PM",
             location = "Archery Range",
             description = "Session 9 of 15. Open practice for members.",
-            category = "Archery"
+            category = "Archery",
+            onRegister = { navController.navigate("register/open-archery") }
         )
 
         EventCard(
@@ -87,7 +88,8 @@ fun EventsScreen() {
             time = "6:00 PM - 9:00 PM",
             location = "Indoor Pistol Range",
             description = "BC Target Sports Association precision pistol competition.",
-            category = "Pistol"
+            category = "Pistol",
+            onRegister = { navController.navigate("register/precision-pistol-bctsa") }
         )
 
         EventCard(
@@ -96,7 +98,8 @@ fun EventsScreen() {
             time = "6:00 PM - 9:00 PM",
             location = "Pistol Range",
             description = "Police Pistol Combat style competition. All skill levels.",
-            category = "Pistol"
+            category = "Pistol",
+            onRegister = { navController.navigate("register/handgun-1500-ppc") }
         )
 
         EventCard(
@@ -105,7 +108,8 @@ fun EventsScreen() {
             time = "6:00 PM - 9:00 PM",
             location = "Action Pistol Bay",
             description = "International Practical Shooting Confederation match.",
-            category = "Pistol"
+            category = "Pistol",
+            onRegister = { navController.navigate("register/ipsc-bc") }
         )
 
         EventCard(
@@ -114,7 +118,8 @@ fun EventsScreen() {
             time = "10:00 AM - 2:00 PM",
             location = "Trap Range",
             description = "Weekly trap shooting. Shells available for purchase.",
-            category = "Shotgun"
+            category = "Shotgun",
+            onRegister = { navController.navigate("register/trapshooting") }
         )
 
         EventCard(
@@ -123,10 +128,10 @@ fun EventsScreen() {
             time = "10:00 AM - 11:30 AM",
             location = "Clubhouse",
             description = "Mandatory orientation for new members. Registration required. This training is a club and legal requirement prior to shooting unsupervised.",
-            category = "Training"
+            category = "Training",
+            onRegister = { navController.navigate("register/new-member-orientation") }
         )
 
-        // Courses Section
         SectionHeader("COURSES")
 
         EventCard(
@@ -135,7 +140,8 @@ fun EventsScreen() {
             time = "9:00 AM - 5:00 PM",
             location = "Clubhouse",
             description = "Non-Restricted PAL course. Certification for firearm possession and acquisition.",
-            category = "Course"
+            category = "Course",
+            onRegister = { navController.navigate("register/pal-course") }
         )
 
         EventCard(
@@ -144,10 +150,10 @@ fun EventsScreen() {
             time = "9:00 AM - 4:00 PM",
             location = "Indoor Range",
             description = "Required qualification for handgun use at the club.",
-            category = "Course"
+            category = "Course",
+            onRegister = { navController.navigate("register/handgun-safety-course") }
         )
 
-        // Coming Up Section
         SectionHeader("COMING UP")
 
         EventCard(
@@ -156,7 +162,8 @@ fun EventsScreen() {
             time = "10:00 AM - 12:00 PM",
             location = "Pistol Range",
             description = "Women's pistol training and practice session.",
-            category = "Pistol"
+            category = "Pistol",
+            onRegister = { navController.navigate("register/women-pistol-discipline") }
         )
 
         EventCard(
@@ -165,7 +172,8 @@ fun EventsScreen() {
             time = "9:00 AM - 12:00 PM",
             location = "Various Ranges",
             description = "Youth shooting sports program. Ages 12-17.",
-            category = "Youth"
+            category = "Youth",
+            onRegister = { navController.navigate("register/youth-core-program") }
         )
 
         EventCard(
@@ -174,7 +182,8 @@ fun EventsScreen() {
             time = "9:00 AM - 4:00 PM",
             location = "Outdoor Rifle Range",
             description = "Long range precision rifle practice and competition.",
-            category = "Rifle"
+            category = "Rifle",
+            onRegister = { navController.navigate("register/precision-rifle") }
         )
 
         EventCard(
@@ -183,7 +192,8 @@ fun EventsScreen() {
             time = "10:00 AM - 12:00 PM",
             location = "Rifle Range",
             description = "Rimfire rifle target shooting for all skill levels.",
-            category = "Rifle"
+            category = "Rifle",
+            onRegister = { navController.navigate("register/target-rimfire") }
         )
 
         EventCard(
@@ -192,7 +202,8 @@ fun EventsScreen() {
             time = "9:00 AM - 10:30 AM",
             location = "Archery Range",
             description = "Session 15 of 25. BC Archery Association Junior Olympic Program.",
-            category = "Youth"
+            category = "Youth",
+            onRegister = { navController.navigate("register/junior-archery") }
         )
 
         EventCard(
@@ -201,7 +212,8 @@ fun EventsScreen() {
             time = "10:30 AM - 12:00 PM",
             location = "Archery Range",
             description = "Session 15 of 25. BC Archery Association adult program.",
-            category = "Archery"
+            category = "Archery",
+            onRegister = { navController.navigate("register/adult-archery") }
         )
 
         EventCard(
@@ -210,7 +222,8 @@ fun EventsScreen() {
             time = "1:00 PM - 4:00 PM",
             location = "Pistol Range",
             description = "Improve your pistol skills. Open to all members.",
-            category = "Pistol"
+            category = "Pistol",
+            onRegister = { navController.navigate("register/recreational-pistol") }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -236,7 +249,8 @@ fun EventCard(
     time: String,
     location: String,
     description: String,
-    category: String
+    category: String,
+    onRegister: () -> Unit
 ) {
     val categoryColor = when (category) {
         "Archery" -> Color(0xFF4CAF50)
@@ -257,7 +271,6 @@ fun EventCard(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
     ) {
         Column {
-            // Card Header
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -292,7 +305,6 @@ fun EventCard(
                 }
             }
 
-            // Card Content
             Column(modifier = Modifier.padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -345,7 +357,7 @@ fun EventCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(
-                    onClick = { },
+                    onClick = onRegister,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.fillMaxWidth(),

@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.capstone2.ui.theme.Capstone2Theme
 import com.example.capstone2.ui.screens.*
 
@@ -40,6 +41,7 @@ fun MainApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val userViewModel: UserViewModel = viewModel()
 
     val bottomNavItems = listOf(
         BottomNavItem("home", "Home", Icons.Default.Home),
@@ -87,7 +89,7 @@ fun MainApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") { HomeScreen(navController = navController) }
-            composable("events") { EventsScreen() }
+            composable("events") { EventsScreen(navController = navController) }
             composable("forum") { ForumScreen() }
             composable("rangelog") { RangeLogScreen() }
             composable("profile") { ProfileScreen(navController = navController) }
@@ -97,7 +99,7 @@ fun MainApp() {
             composable("renew") { RenewScreen(navController = navController) }
             composable("documents") { DocumentsScreen(navController = navController) }
             composable("help") { HelpScreen(navController = navController) }
-            composable("login") { LoginScreen(navController = navController) }
+            composable("login") { LoginScreen(navController = navController, userViewModel = userViewModel) }
             composable("join") { JoinScreen(navController = navController) }
             composable("ranges") { RangesScreen(navController = navController) }
             composable("courses") { CoursesScreen(navController = navController) }
@@ -110,6 +112,19 @@ fun MainApp() {
             composable("riflerange") { RifleRangeScreen(navController = navController) }
             composable("archeryrange") { ArcheryRangeScreen(navController = navController) }
             composable("traprange") { TrapRangeScreen(navController = navController) }
+            composable("register/{eventName}") { backStackEntry ->
+                val eventName = backStackEntry.arguments?.getString("eventName") ?: "Event"
+                RegistrationScreen(navController = navController, eventName = eventName)
+            }
+            composable("store") { StoreScreen(navController = navController) }
+            composable("admin") { AdminScreen(navController = navController) }
+            composable("checkout/{itemName}/{price}") { backStackEntry ->
+                val itemName = backStackEntry.arguments?.getString("itemName") ?: "Item"
+                val price = backStackEntry.arguments?.getString("price") ?: "0.00"
+                CheckoutScreen(navController = navController, itemName = itemName, price = price)
+            }
+            composable("myaccount") { MyAccountScreen(navController = navController, userViewModel = userViewModel) }
+            composable("adminpanel") { AdminPanelScreen(navController = navController, userViewModel = userViewModel) }
         }
     }
 }
