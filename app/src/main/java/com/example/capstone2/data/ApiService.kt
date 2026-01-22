@@ -54,13 +54,13 @@ data class ClubInfo(
 
 // API Interface
 interface KdfgcApiService {
-    @GET("751c51b3b899aa72cf15")
+    @GET("Turnagain672/KDFGC_Capstone/App/kdfgc-data.json")
     suspend fun getKdfgcData(): KdfgcData
 }
 
 // Retrofit instance
 object RetrofitClient {
-    private const val BASE_URL = "https://api.npoint.io/"
+    private const val BASE_URL = "https://raw.githubusercontent.com/"
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
