@@ -22,11 +22,16 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.capstone2.ui.theme.Capstone2Theme
 import com.example.capstone2.ui.screens.*
+import com.example.capstone2.data.WorkManagerHelper
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Schedule background data sync every 6 hours
+        WorkManagerHelper.schedulePeriodicSync(this)
+
         setContent {
             Capstone2Theme {
                 MainApp()
