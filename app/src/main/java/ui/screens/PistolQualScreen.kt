@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import java.net.URLEncoder
 
 @Composable
 fun PistolQualScreen(navController: NavController) {
@@ -124,7 +125,10 @@ fun PistolQualScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { },
+                onClick = {
+                    val courseName = URLEncoder.encode("Pistol Safety Qualification", "UTF-8")
+                    navController.navigate("register/$courseName")
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
                 shape = RoundedCornerShape(10.dp),
