@@ -18,11 +18,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.capstone2.data.KdfgcViewModel
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = viewModel()) {
     val scrollState = rememberScrollState()
+    val kdfgcData by kdfgcViewModel.kdfgcData.collectAsState()
+    val isLoading by kdfgcViewModel.isLoading.collectAsState()
+    val error by kdfgcViewModel.error.collectAsState()
 
     Column(
         modifier = Modifier
@@ -73,7 +78,7 @@ fun HomeScreen(navController: NavController) {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Kelowna & District\nFish and Game Club",
+                    text = kdfgcData?.clubInfo?.name ?: "Kelowna & District\nFish and Game Club",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -139,22 +144,51 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Range Hours Card
+        // Loading/Error State
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF90EE90))
+            }
+        }
+
+        error?.let {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF3D2525))
+            ) {
+                Text(
+                    text = "⚠️ Could not load latest data: $it",
+                    color = Color(0xFFFF6B6B),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+
+        // Range Hours Card - Now from API
         InfoCard(title = "🕐 RANGE HOURS") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Outdoor Range", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Weekdays: 9 AM - 8 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
-                    Text("(or dusk, if earlier)", color = Color(0xFF888888), fontSize = 10.sp)
-                    Text("Weekends: 9 AM - 5 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                    Text("Range Hours", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        kdfgcData?.clubInfo?.rangeHours ?: "8:00 AM - Dusk (Daily)",
+                        color = Color(0xFFCCCCCC),
+                        fontSize = 12.sp
+                    )
                 }
                 Column {
                     Text("Office Hours", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Tue & Thu: 11 AM - 4 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
-                    Text("Saturday: 9 AM - 3 PM", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                    Text(
+                        kdfgcData?.clubInfo?.officeHours ?: "Tue & Thu 6-8 PM, Sat 10 AM-2 PM",
+                        color = Color(0xFFCCCCCC),
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
@@ -169,14 +203,18 @@ fun HomeScreen(navController: NavController) {
             )
         }
 
-        // Upcoming Events Card
+        // Upcoming Events Card - Now from API
         InfoCard(title = "📅 UPCOMING EVENTS") {
-            EventItem("Sunday Night Archery League", "Session 3 of 13 • Indoor Range")
-            EventItem("Open Archery", "Session 9 of 15 • Archery Range")
-            EventItem("Junior Archery (BCAA JOP)", "Session 15 of 25 • Archery Range")
-            EventItem("Adult Archery (BCAA)", "Session 15 of 25 • Archery Range")
-            EventItem("Trapshooting", "Saturdays • Trap Range")
-            EventItem("Precision Rifle", "Outdoor Range")
+            val events = kdfgcData?.events
+            if (events.isNullOrEmpty()) {
+                EventItem("Sunday Night Archery League", "Session 3 of 13 • Indoor Range")
+                EventItem("Open Archery", "Session 9 of 15 • Archery Range")
+                EventItem("Trapshooting", "Saturdays • Trap Range")
+            } else {
+                events.forEach { event ->
+                    EventItem(event.title, "${event.date} • ${event.location}")
+                }
+            }
         }
 
         // Featured News
@@ -208,7 +246,7 @@ fun HomeScreen(navController: NavController) {
             )
         }
 
-        // Courses
+        // Courses - Now from API
         Text(
             text = "COURSES & TRAINING",
             fontSize = 13.sp,
@@ -225,11 +263,25 @@ fun HomeScreen(navController: NavController) {
                 .padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            CourseChip("PAL Course") { navController.navigate("palcourse") }
-            CourseChip("RPAL Course") { navController.navigate("rpalcourse") }
-            CourseChip("Handgun Safety") { navController.navigate("handgunsafety") }
-            CourseChip("Pistol Qualification") { navController.navigate("pistolqual") }
-            CourseChip("Youth Core Program") { navController.navigate("courses") }
+            val courses = kdfgcData?.courses
+            if (courses.isNullOrEmpty()) {
+                CourseChip("PAL Course") { navController.navigate("palcourse") }
+                CourseChip("RPAL Course") { navController.navigate("rpalcourse") }
+                CourseChip("Handgun Safety") { navController.navigate("handgunsafety") }
+                CourseChip("Pistol Qualification") { navController.navigate("pistolqual") }
+            } else {
+                courses.forEach { course ->
+                    CourseChip(course.name) {
+                        when (course.id) {
+                            "pal" -> navController.navigate("palcourse")
+                            "rpal" -> navController.navigate("rpalcourse")
+                            "handgun" -> navController.navigate("handgunsafety")
+                            "pistolqual" -> navController.navigate("pistolqual")
+                            else -> navController.navigate("courses")
+                        }
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -258,15 +310,31 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Contact Info
+        // Contact Info - Now from API
         InfoCard(title = "📍 CONTACT US") {
-            Text("Kelowna and District Fish & Game Club", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                kdfgcData?.clubInfo?.name ?: "Kelowna and District Fish & Game Club",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text("4041 Casorso Rd.", color = Color(0xFFCCCCCC), fontSize = 13.sp)
-            Text("Kelowna, BC, V1W 4N6", color = Color(0xFFCCCCCC), fontSize = 13.sp)
+            Text(
+                kdfgcData?.clubInfo?.address ?: "2319 Rifle Road, Kelowna, BC",
+                color = Color(0xFFCCCCCC),
+                fontSize = 13.sp
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text("📧 info@kdfgc.org", color = Color(0xFF90EE90), fontSize = 13.sp)
-            Text("📞 250.764.7558", color = Color(0xFF90EE90), fontSize = 13.sp)
+            Text(
+                "📧 ${kdfgcData?.clubInfo?.email ?: "info@kdfgc.org"}",
+                color = Color(0xFF90EE90),
+                fontSize = 13.sp
+            )
+            Text(
+                "📞 ${kdfgcData?.clubInfo?.phone ?: "(250) 762-2111"}",
+                color = Color(0xFF90EE90),
+                fontSize = 13.sp
+            )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
