@@ -1,11 +1,15 @@
 package com.example.capstone2.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,19 +19,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.capstone2.data.ForumPost
 import com.example.capstone2.data.ForumViewModel
 
+data class ForumCategory(
+    val id: String,
+    val name: String,
+    val icon: ImageVector,
+    val color: Color,
+    val description: String
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ForumScreen(viewModel: ForumViewModel = viewModel()) {
-    val scrollState = rememberScrollState()
-    var newPostText by remember { mutableStateOf("") }
+fun ForumScreen(navController: NavController, viewModel: ForumViewModel = viewModel()) {
+    var selectedCategory by remember { mutableStateOf("all") }
+    var showNewPostSheet by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
 
     val posts by viewModel.allPosts.collectAsState(initial = emptyList())
+
+    val categories = listOf(
+        ForumCategory("all", "All Posts", Icons.Default.Forum, Color(0xFF007236), "Everything"),
+        ForumCategory("general", "General", Icons.Default.Chat, Color(0xFF2196F3), "Club news & chat"),
+        ForumCategory("ranges", "Ranges", Icons.Default.GpsFixed, Color(0xFFFF5722), "Range talk"),
+        ForumCategory("gear", "Gear & Reviews", Icons.Default.Build, Color(0xFF9C27B0), "Equipment"),
+        ForumCategory("events", "Events", Icons.Default.Event, Color(0xFFFFEB3B), "Meetups"),
+        ForumCategory("safety", "Safety", Icons.Default.Shield, Color(0xFFF44336), "Safety first"),
+        ForumCategory("hunting", "Hunting", Icons.Default.Forest, Color(0xFF4CAF50), "Hunting talk"),
+        ForumCategory("marketplace", "Buy/Sell", Icons.Default.Store, Color(0xFF00BCD4), "Marketplace")
+    )
+
+    val filteredPosts = posts.filter { post ->
+        (selectedCategory == "all" || post.category == selectedCategory) &&
+                (searchQuery.isEmpty() || post.content.contains(searchQuery, ignoreCase = true) ||
+                        post.author.contains(searchQuery, ignoreCase = true))
+    }.sortedByDescending { it.timestamp }
 
     Column(
         modifier = Modifier
@@ -39,113 +75,225 @@ fun ForumScreen(viewModel: ForumViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.linearGradient(
+                    Brush.verticalGradient(
                         colors = listOf(Color(0xFF003D1F), Color(0xFF007236))
                     )
                 )
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
-            Column {
-                Text(
-                    text = "💬 MEMBER FORUM",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Connect with fellow members",
-                    fontSize = 12.sp,
-                    color = Color(0xFFCCCCCC)
-                )
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("MEMBER FORUM", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("${posts.size} discussions", fontSize = 11.sp, color = Color(0xFFCCCCCC))
+            }
+
+            IconButton(
+                onClick = { showSearch = !showSearch },
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(if (showSearch) Icons.Default.Close else Icons.Default.Search, contentDescription = "Search", tint = Color.White)
             }
         }
 
-        // New Post Input
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+        if (showSearch) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search posts...", color = Color(0xFF888888)) },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+        }
+
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                OutlinedTextField(
-                    value = newPostText,
-                    onValueChange = { newPostText = it },
-                    placeholder = { Text("Share something with the club...", color = Color(0xFF888888)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF007236),
-                        unfocusedBorderColor = Color(0xFF444444),
-                        cursorColor = Color(0xFF90EE90)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Button(
-                    onClick = {
-                        if (newPostText.isNotBlank()) {
-                            viewModel.addPost("You", newPostText)
-                            newPostText = ""
+            items(categories) { category ->
+                FilterChip(
+                    selected = selectedCategory == category.id,
+                    onClick = { selectedCategory = category.id },
+                    label = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(category.icon, null, Modifier.size(16.dp), tint = if (selectedCategory == category.id) Color.White else category.color)
+                            Spacer(Modifier.width(6.dp))
+                            Text(category.name, fontSize = 12.sp)
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("POST", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                }
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = category.color, selectedLabelColor = Color.White,
+                        containerColor = Color(0xFF252525), labelColor = Color(0xFFCCCCCC)
+                    )
+                )
             }
         }
 
-        // Posts List
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
+        Button(
+            onClick = { showNewPostSheet = true },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            if (posts.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No posts yet.\nBe the first to share something!",
-                        color = Color(0xFF888888),
-                        fontSize = 14.sp
-                    )
+            Icon(Icons.Default.Add, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("NEW POST", fontWeight = FontWeight.Bold)
+        }
+
+        if (filteredPosts.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Forum, null, tint = Color(0xFF444444), modifier = Modifier.size(64.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text("No posts yet", color = Color(0xFF888888), fontSize = 16.sp)
+                    Text("Be the first to start a discussion!", color = Color(0xFF666666), fontSize = 13.sp)
                 }
-            } else {
-                posts.forEach { post ->
-                    ForumPostCard(
-                        post = post,
-                        viewModel = viewModel,
-                        onLike = { viewModel.likePost(post.id) },
-                        onDelete = { viewModel.deletePost(post) }
+            }
+        } else {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 80.dp)) {
+                items(filteredPosts, key = { it.id }) { post ->
+                    ForumPostCard(post, viewModel, categories)
+                }
+            }
+        }
+    }
+
+    if (showNewPostSheet) {
+        NewPostBottomSheet(
+            categories = categories.filter { it.id != "all" },
+            onDismiss = { showNewPostSheet = false },
+            onPost = { content, category, photoUri ->
+                viewModel.addPost("You", content, category, photoUri)
+                showNewPostSheet = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NewPostBottomSheet(
+    categories: List<ForumCategory>,
+    onDismiss: () -> Unit,
+    onPost: (String, String, String?) -> Unit
+) {
+    var postContent by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("general") }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        photoUri = uri
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF252525),
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(20.dp)) {
+            Text("Create New Post", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
+
+            Text("Category", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(categories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category.id,
+                        onClick = { selectedCategory = category.id },
+                        label = { Text(category.name, fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = category.color, selectedLabelColor = Color.White,
+                            containerColor = Color(0xFF333333), labelColor = Color(0xFFCCCCCC)
+                        )
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
+            Text("Your Post", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = postContent,
+                onValueChange = { postContent = it },
+                placeholder = { Text("Share your thoughts...", color = Color(0xFF888888)) },
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = { photoPickerLauncher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF90EE90)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(if (photoUri != null) Icons.Default.CheckCircle else Icons.Default.AddAPhoto, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (photoUri != null) "Photo Added ✓" else "Add Photo")
+            }
+
+            if (photoUri != null) {
+                Spacer(Modifier.height(12.dp))
+                Box(Modifier.fillMaxWidth()) {
+                    AsyncImage(
+                        model = photoUri,
+                        contentDescription = "Selected photo",
+                        modifier = Modifier.fillMaxWidth().height(150.dp).clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    IconButton(
+                        onClick = { photoUri = null },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(28.dp).background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, "Remove", tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = { if (postContent.isNotBlank()) onPost(postContent, selectedCategory, photoUri?.toString()) },
+                enabled = postContent.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236), disabledContainerColor = Color(0xFF444444)),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 14.dp)
+            ) {
+                Icon(Icons.Default.Send, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("POST", fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-fun ForumPostCard(
-    post: ForumPost,
-    viewModel: ForumViewModel,
-    onLike: () -> Unit,
-    onDelete: () -> Unit
-) {
+fun ForumPostCard(post: ForumPost, viewModel: ForumViewModel, categories: List<ForumCategory>) {
     var isLiked by remember { mutableStateOf(false) }
     var showReplies by remember { mutableStateOf(false) }
     var replyText by remember { mutableStateOf("") }
@@ -153,6 +301,7 @@ fun ForumPostCard(
 
     val replies by viewModel.getReplies(post.id).collectAsState(initial = emptyList())
     val replyCount by viewModel.getReplyCount(post.id).collectAsState(initial = 0)
+    val category = categories.find { it.id == post.category }
 
     val timeAgo = remember(post.timestamp) {
         val diff = System.currentTimeMillis() - post.timestamp
@@ -160,191 +309,129 @@ fun ForumPostCard(
         val hours = minutes / 60
         val days = hours / 24
         when {
-            days > 0 -> "$days day${if (days > 1) "s" else ""} ago"
-            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} ago"
-            minutes > 0 -> "$minutes min${if (minutes > 1) "s" else ""} ago"
+            days > 0 -> "${days}d ago"
+            hours > 0 -> "${hours}h ago"
+            minutes > 0 -> "${minutes}m ago"
             else -> "Just now"
         }
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            // Author Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF007236)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = post.author.first().toString(),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = post.author,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text = timeAgo,
-                            color = Color(0xFF888888),
-                            fontSize = 11.sp
-                        )
+        Column(Modifier.padding(16.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                if (category != null) {
+                    Surface(shape = RoundedCornerShape(6.dp), color = category.color.copy(alpha = 0.2f)) {
+                        Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(category.icon, null, tint = category.color, modifier = Modifier.size(12.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(category.name, color = category.color, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(24.dp)
+                Text(timeAgo, color = Color(0xFF888888), fontSize = 11.sp)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFF007236)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = Color(0xFF888888),
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Text(post.author.first().uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(post.author, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Member", color = Color(0xFF888888), fontSize = 11.sp)
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { viewModel.deletePost(post) }) {
+                    Icon(Icons.Default.Delete, "Delete", tint = Color(0xFF666666), modifier = Modifier.size(18.dp))
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Content
-            Text(
-                text = post.content,
-                color = Color(0xFFDDDDDD),
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
+            Text(post.content, color = Color(0xFFEEEEEE), fontSize = 14.sp, lineHeight = 20.sp)
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Show photo if exists
+            if (!post.photoUri.isNullOrEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                AsyncImage(
+                    model = post.photoUri,
+                    contentDescription = "Post photo",
+                    modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
             HorizontalDivider(color = Color(0xFF333333))
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // Actions Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                TextButton(
-                    onClick = {
-                        isLiked = !isLiked
-                        if (isLiked) onLike()
-                    }
-                ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                TextButton(onClick = {
+                    isLiked = !isLiked
+                    if (isLiked) viewModel.likePost(post.id)
+                }) {
                     Icon(
                         if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (isLiked) Color(0xFFFF6B6B) else Color(0xFF888888),
-                        modifier = Modifier.size(18.dp)
+                        null, tint = if (isLiked) Color(0xFFFF6B6B) else Color(0xFF888888), modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${post.likes + if (isLiked) 1 else 0}",
-                        color = if (isLiked) Color(0xFFFF6B6B) else Color(0xFF888888),
-                        fontSize = 12.sp
-                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("${post.likes + if (isLiked) 1 else 0}", color = if (isLiked) Color(0xFFFF6B6B) else Color(0xFF888888), fontSize = 12.sp)
                 }
 
-                TextButton(
-                    onClick = { showReplyInput = !showReplyInput }
-                ) {
-                    Icon(
-                        Icons.Default.Reply,
-                        contentDescription = null,
-                        tint = Color(0xFF888888),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Reply", color = Color(0xFF888888), fontSize = 12.sp)
+                TextButton(onClick = { showReplyInput = !showReplyInput }) {
+                    Icon(Icons.Default.Reply, null, tint = Color(0xFF888888), modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Reply", color = Color(0xFF888888), fontSize = 12.sp)
                 }
 
-                TextButton(
-                    onClick = { showReplies = !showReplies }
-                ) {
-                    Icon(
-                        Icons.Default.ChatBubbleOutline,
-                        contentDescription = null,
-                        tint = if (showReplies) Color(0xFF90EE90) else Color(0xFF888888),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$replyCount",
-                        color = if (showReplies) Color(0xFF90EE90) else Color(0xFF888888),
-                        fontSize = 12.sp
-                    )
+                TextButton(onClick = { showReplies = !showReplies }) {
+                    Icon(Icons.Default.ChatBubbleOutline, null, tint = if (showReplies) Color(0xFF90EE90) else Color(0xFF888888), modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("$replyCount", color = if (showReplies) Color(0xFF90EE90) else Color(0xFF888888), fontSize = 12.sp)
                 }
             }
 
-            // Reply Input
             if (showReplyInput) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = replyText,
                         onValueChange = { replyText = it },
                         placeholder = { Text("Write a reply...", color = Color(0xFF888888), fontSize = 12.sp) },
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color(0xFF007236),
-                            unfocusedBorderColor = Color(0xFF444444),
-                            cursorColor = Color(0xFF90EE90)
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444)
                         ),
                         shape = RoundedCornerShape(8.dp),
                         singleLine = true
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            if (replyText.isNotBlank()) {
-                                viewModel.addReply("You", replyText, post.id)
-                                replyText = ""
-                                showReplyInput = false
-                                showReplies = true
-                            }
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = {
+                        if (replyText.isNotBlank()) {
+                            viewModel.addReply("You", replyText, post.id)
+                            replyText = ""
+                            showReplyInput = false
+                            showReplies = true
                         }
-                    ) {
-                        Icon(
-                            Icons.Default.Send,
-                            contentDescription = "Send",
-                            tint = Color(0xFF007236)
-                        )
+                    }) {
+                        Icon(Icons.Default.Send, "Send", tint = Color(0xFF007236))
                     }
                 }
             }
 
-            // Replies Section
             if (showReplies && replies.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = Color(0xFF333333))
-                Spacer(modifier = Modifier.height(8.dp))
-
-                replies.forEach { reply ->
-                    ReplyCard(reply = reply)
-                }
+                Spacer(Modifier.height(12.dp))
+                replies.forEach { reply -> ReplyCard(reply) }
             }
         }
     }
@@ -358,55 +445,31 @@ fun ReplyCard(reply: ForumPost) {
         val hours = minutes / 60
         val days = hours / 24
         when {
-            days > 0 -> "$days day${if (days > 1) "s" else ""} ago"
-            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""} ago"
-            minutes > 0 -> "$minutes min${if (minutes > 1) "s" else ""} ago"
-            else -> "Just now"
+            days > 0 -> "${days}d"
+            hours > 0 -> "${hours}h"
+            minutes > 0 -> "${minutes}m"
+            else -> "now"
         }
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 8.dp)
+            .background(Color(0xFF1A1A1A), RoundedCornerShape(8.dp)).padding(10.dp)
     ) {
         Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF005522)),
+            modifier = Modifier.size(28.dp).clip(CircleShape).background(Color(0xFF005522)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = reply.author.first().toString(),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
+            Text(reply.author.first().uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
-        Spacer(modifier = Modifier.width(10.dp))
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = reply.author,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = timeAgo,
-                    color = Color(0xFF888888),
-                    fontSize = 10.sp
-                )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(reply.author, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                Text(timeAgo, color = Color(0xFF666666), fontSize = 10.sp)
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = reply.content,
-                color = Color(0xFFCCCCCC),
-                fontSize = 13.sp,
-                lineHeight = 18.sp
-            )
+            Spacer(Modifier.height(4.dp))
+            Text(reply.content, color = Color(0xFFCCCCCC), fontSize = 12.sp, lineHeight = 16.sp)
         }
     }
 }

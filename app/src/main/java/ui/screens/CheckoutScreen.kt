@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.net.URLDecoder
 
 class CardNumberTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
@@ -82,8 +83,26 @@ class ExpiryDateTransformation : VisualTransformation {
     }
 }
 
+fun getQuantityForItem(itemName: String): Int {
+    return when {
+        itemName.contains("10 Use", ignoreCase = true) -> 10
+        itemName.contains("10 Round", ignoreCase = true) -> 10
+        itemName.contains("25 Clays", ignoreCase = true) -> 25
+        itemName.contains("Guest Pass", ignoreCase = true) -> 1
+        itemName.contains("Chamber Flag", ignoreCase = true) -> 1
+        itemName.contains("1500", ignoreCase = true) -> 1
+        itemName.contains("Target Card", ignoreCase = true) -> 1
+        else -> 1
+    }
+}
+
 @Composable
-fun CheckoutScreen(navController: NavController, itemName: String, price: String) {
+fun CheckoutScreen(
+    navController: NavController,
+    itemName: String,
+    price: String,
+    userViewModel: UserViewModel
+) {
     var cardNumber by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
@@ -94,6 +113,16 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
     var isProcessing by remember { mutableStateOf(false) }
     var isComplete by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    val currentUser by userViewModel.currentUser.collectAsState()
+
+    val displayName = try {
+        URLDecoder.decode(itemName, "UTF-8")
+    } catch (e: Exception) {
+        itemName.replace("-", " ").replaceFirstChar { it.uppercase() }
+    }
+
+    val quantity = getQuantityForItem(displayName)
 
     val isFormValid = cardNumber.length == 16 && expiryDate.length == 4 && cvv.length == 3 &&
             cardholderName.isNotBlank() && billingAddress.isNotBlank() &&
@@ -153,7 +182,7 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                 Text("Payment Successful!", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = itemName.replace("-", " ").replaceFirstChar { it.uppercase() },
+                    text = displayName,
                     color = Color(0xFF90EE90),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -161,6 +190,29 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("$$price CAD", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+                if (currentUser != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E3A2F))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("✅", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                "$quantity uses added to your account!",
+                                color = Color(0xFF90EE90),
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     "A confirmation email has been sent.\nPlease bring your receipt to the club office.",
@@ -169,9 +221,24 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(32.dp))
+
+                if (currentUser != null) {
+                    Button(
+                        onClick = { navController.navigate("myaccount") },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("VIEW MY PASSES", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 Button(
                     onClick = { navController.navigate("store") },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (currentUser != null) Color(0xFF444444) else Color(0xFF007236)
+                    ),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -193,6 +260,30 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
+                if (currentUser == null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF3D2F1E))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("⚠️", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Not logged in", color = Color(0xFFFFCC80), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text("Log in to save passes to your account", color = Color(0xFFCCCCCC), fontSize = 11.sp)
+                            }
+                            TextButton(onClick = { navController.navigate("login") }) {
+                                Text("LOG IN", color = Color(0xFFFFCC80), fontSize = 12.sp)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -202,10 +293,15 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                         Text("ORDER SUMMARY", color = Color(0xFF888888), fontSize = 11.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            itemName.replace("-", " ").replaceFirstChar { it.uppercase() },
+                            displayName,
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "Includes $quantity uses",
+                            color = Color(0xFF90EE90),
+                            fontSize = 12.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         HorizontalDivider(color = Color(0xFF333333))
@@ -331,7 +427,8 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                         cursorColor = Color(0xFF90EE90),
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White
-                    ),                    shape = RoundedCornerShape(10.dp)
+                    ),
+                    shape = RoundedCornerShape(10.dp)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -379,6 +476,14 @@ fun CheckoutScreen(navController: NavController, itemName: String, price: String
                             isProcessing = true
                             scope.launch {
                                 delay(2000)
+                                currentUser?.let { user ->
+                                    userViewModel.addPurchase(
+                                        userId = user.id,
+                                        itemName = displayName,
+                                        quantity = quantity,
+                                        price = price
+                                    )
+                                }
                                 isProcessing = false
                                 isComplete = true
                             }

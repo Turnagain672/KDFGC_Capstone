@@ -1,18 +1,17 @@
 package com.example.capstone2.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -20,6 +19,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import java.net.URLEncoder
 
 @Composable
 fun StoreScreen(navController: NavController) {
@@ -40,12 +40,18 @@ fun StoreScreen(navController: NavController) {
                 )
                 .padding(16.dp)
         ) {
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
             Text(
                 text = "🛒 KDFGC STORE",
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.CenterStart)
+                modifier = Modifier.align(Alignment.Center)
             )
             if (cartCount > 0) {
                 Badge(
@@ -71,7 +77,12 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$120.00",
                 memberPrice = "$100.00",
                 description = "10 visits to the indoor range. Valid for 1 year from purchase.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/indoor-adult-punch-card/100.00") }
+                uses = 10,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             StoreItem(
@@ -79,7 +90,12 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$80.00",
                 memberPrice = "$60.00",
                 description = "10 visits to the indoor range for youth members. Valid for 1 year.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/indoor-junior-punch-card/60.00") }
+                uses = 10,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             StoreItem(
@@ -87,7 +103,12 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$150.00",
                 memberPrice = "$120.00",
                 description = "10 sessions at the precision rifle range. Includes target stands.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/prs-punch-card/120.00") }
+                uses = 10,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -99,15 +120,25 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$100.00",
                 memberPrice = "$80.00",
                 description = "Punch Card good for 10 Rounds of Trap Shooting. Does not include firearm rental or shells.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/trap-punch-card/80.00") }
+                uses = 10,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             StoreItem(
-                name = "Shot Gun Prepaid Targets",
+                name = "Shot Gun Prepaid Targets (25 Clays)",
                 regularPrice = "$50.00",
                 memberPrice = "$40.00",
                 description = "Prepaid targets for shotgun sports. 25 clay targets.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/shotgun-targets/40.00") }
+                uses = 25,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -115,11 +146,16 @@ fun StoreScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(12.dp))
 
             StoreItem(
-                name = "KDFGC 1500 PRE-PAID TARGET CARD",
+                name = "KDFGC 1500 Pre-Paid Target Card",
                 regularPrice = "$25.00",
                 memberPrice = "$20.00",
-                description = "Prepaid target card for indoor range use. Good for paper targets.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/1500-target-card/20.00") }
+                description = "Prepaid target card worth $15.00 credit for indoor range targets.",
+                uses = 1,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -131,7 +167,12 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$30.00",
                 memberPrice = "$25.00",
                 description = "Single-use guest pass for adult visitors. Must be accompanied by member.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/adult-guest-pass/25.00") }
+                uses = 1,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             StoreItem(
@@ -139,7 +180,12 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$20.00",
                 memberPrice = "$15.00",
                 description = "Single-use guest pass for junior visitors (17 and under). Must be accompanied by member.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/junior-guest-pass/15.00") }
+                uses = 1,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -151,7 +197,12 @@ fun StoreScreen(navController: NavController) {
                 regularPrice = "$5.00",
                 memberPrice = "$5.00",
                 description = "Safety chamber flags. Required for all firearms on the range.",
-                onAddToCart = { cartCount++; navController.navigate("checkout/chamber-flags/5.00") }
+                uses = 1,
+                onBuy = { name, price ->
+                    cartCount++
+                    val encoded = URLEncoder.encode(name, "UTF-8")
+                    navController.navigate("checkout/$encoded/$price")
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -165,8 +216,11 @@ fun StoreItem(
     regularPrice: String,
     memberPrice: String,
     description: String,
-    onAddToCart: () -> Unit
+    uses: Int,
+    onBuy: (String, String) -> Unit
 ) {
+    val priceValue = memberPrice.replace("$", "")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -175,12 +229,26 @@ fun StoreItem(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = name,
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = name,
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (uses > 1) {
+                    Badge(
+                        containerColor = Color(0xFF007236)
+                    ) {
+                        Text("$uses uses", fontSize = 10.sp)
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = description,
@@ -209,7 +277,7 @@ fun StoreItem(
                     )
                 }
                 Button(
-                    onClick = onAddToCart,
+                    onClick = { onBuy(name, priceValue) },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

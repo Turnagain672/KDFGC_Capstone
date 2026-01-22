@@ -23,8 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
     val scrollState = rememberScrollState()
+    val currentUser by userViewModel.currentUser.collectAsState()
 
     Column(
         modifier = Modifier
@@ -57,7 +58,7 @@ fun ProfileScreen(navController: NavController) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "JD",
+                        text = currentUser?.fullName?.take(2)?.uppercase() ?: "JD",
                         color = Color(0xFF007236),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold
@@ -67,7 +68,7 @@ fun ProfileScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "John Doe",
+                    text = currentUser?.fullName ?: "John Doe",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -101,6 +102,58 @@ fun ProfileScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // My Account Button (Passes & Cards)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .clickable {
+                    if (currentUser != null) {
+                        navController.navigate("myaccount")
+                    } else {
+                        navController.navigate("login")
+                    }
+                },
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF007236))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.CreditCard,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "My Account",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (currentUser != null) "View passes, cards & purchases" else "Log in to view your passes",
+                        color = Color(0xFFCCFFCC),
+                        fontSize = 12.sp
+                    )
+                }
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Membership Card
         Card(
             modifier = Modifier
@@ -120,7 +173,7 @@ fun ProfileScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                MembershipRow("Member ID", "KDFGC-2023-0847")
+                MembershipRow("Member ID", currentUser?.memberNumber ?: "KDFGC-2023-0847")
                 MembershipRow("Membership Type", "Full Adult")
                 MembershipRow("Expiry Date", "December 31, 2026")
                 MembershipRow("Range Certified", "Indoor, Outdoor, Archery")
@@ -197,7 +250,12 @@ fun ProfileScreen(navController: NavController) {
 
         // Logout Button
         Button(
-            onClick = { },
+            onClick = {
+                userViewModel.logout()
+                navController.navigate("home") {
+                    popUpTo("home") { inclusive = true }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),

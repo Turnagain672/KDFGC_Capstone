@@ -90,9 +90,9 @@ fun MainApp() {
         ) {
             composable("home") { HomeScreen(navController = navController) }
             composable("events") { EventsScreen(navController = navController) }
-            composable("forum") { ForumScreen() }
-            composable("rangelog") { RangeLogScreen() }
-            composable("profile") { ProfileScreen(navController = navController) }
+            composable("forum") { ForumScreen(navController = navController) }
+            composable("rangelog") { RangeLogScreen(navController = navController) }
+            composable("profile") { ProfileScreen(navController = navController, userViewModel = userViewModel) }
             composable("editprofile") { EditProfileScreen(navController = navController) }
             composable("notifications") { NotificationsScreen(navController = navController) }
             composable("privacy") { PrivacyScreen(navController = navController) }
@@ -121,7 +121,7 @@ fun MainApp() {
             composable("checkout/{itemName}/{price}") { backStackEntry ->
                 val itemName = backStackEntry.arguments?.getString("itemName") ?: "Item"
                 val price = backStackEntry.arguments?.getString("price") ?: "0.00"
-                CheckoutScreen(navController = navController, itemName = itemName, price = price)
+                CheckoutScreen(navController = navController, itemName = itemName, price = price, userViewModel = userViewModel)
             }
             composable("myaccount") { MyAccountScreen(navController = navController, userViewModel = userViewModel) }
             composable("adminpanel") { AdminPanelScreen(navController = navController, userViewModel = userViewModel) }

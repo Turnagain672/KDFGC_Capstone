@@ -11,5 +11,8 @@ data class ForumPost(
     val content: String,
     val timestamp: Long = System.currentTimeMillis(),
     val likes: Int = 0,
-    val parentId: Int? = null
+    val parentId: Int? = null,
+    val category: String = "general",
+    val replyCount: Int = 0,
+    val photoUri: String? = null
 )

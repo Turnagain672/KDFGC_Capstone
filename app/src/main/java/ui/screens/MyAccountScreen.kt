@@ -6,10 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,15 +16,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
-fun MyAccountScreen(navController: NavController, userViewModel: UserViewModel = viewModel()) {
+fun MyAccountScreen(navController: NavController, userViewModel: UserViewModel) {
     val currentUser by userViewModel.currentUser.collectAsState()
     val purchases by currentUser?.let {
         userViewModel.getPurchasesForUser(it.id).collectAsState(initial = emptyList())
     } ?: remember { mutableStateOf(emptyList()) }
+
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var selectedPurchaseId by remember { mutableStateOf<Int?>(null) }
+    var selectedPurchaseName by remember { mutableStateOf("") }
+    var selectedRemainingUses by remember { mutableStateOf(0) }
 
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
@@ -53,7 +54,7 @@ fun MyAccountScreen(navController: NavController, userViewModel: UserViewModel =
                 .padding(16.dp)
         ) {
             IconButton(
-                onClick = { navController.navigate("home") },
+                onClick = { navController.popBackStack() },
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -163,7 +164,101 @@ fun MyAccountScreen(navController: NavController, userViewModel: UserViewModel =
                 }
             } else {
                 purchases.forEach { purchase ->
-                    PurchaseCard(purchase = purchase)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = purchase.itemName,
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            if (purchase.remainingQuantity > 3) Color(0xFF007236) else Color(0xFFFF9800),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = "${purchase.remainingQuantity} left",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LinearProgressIndicator(
+                                progress = { purchase.remainingQuantity.toFloat() / purchase.totalQuantity.toFloat() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp),
+                                color = Color(0xFF90EE90),
+                                trackColor = Color(0xFF444444)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Used: ${purchase.totalQuantity - purchase.remainingQuantity} of ${purchase.totalQuantity}",
+                                    color = Color(0xFF888888),
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = "$${purchase.price}",
+                                    color = Color(0xFF888888),
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // USE BUTTON
+                            Button(
+                                onClick = {
+                                    selectedPurchaseId = purchase.id
+                                    selectedPurchaseName = purchase.itemName
+                                    selectedRemainingUses = purchase.remainingQuantity
+                                    showConfirmDialog = true
+                                },
+                                enabled = purchase.remainingQuantity > 0,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (purchase.remainingQuantity > 0) Color(0xFF007236) else Color(0xFF444444),
+                                    disabledContainerColor = Color(0xFF444444)
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(vertical = 12.dp)
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    if (purchase.remainingQuantity > 0) "USE 1 PUNCH" else "NO PUNCHES LEFT",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -200,72 +295,81 @@ fun MyAccountScreen(navController: NavController, userViewModel: UserViewModel =
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
 
-@Composable
-fun PurchaseCard(purchase: com.example.capstone2.data.Purchase) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = purchase.itemName,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
+    // Confirmation Dialog
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            containerColor = Color(0xFF252525),
+            shape = RoundedCornerShape(16.dp),
+            icon = {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFFFCC00),
+                    modifier = Modifier.size(48.dp)
                 )
-                Box(
-                    modifier = Modifier
-                        .background(
-                            if (purchase.remainingQuantity > 3) Color(0xFF007236) else Color(0xFFFF9800),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
+            },
+            title = {
+                Text(
+                    "Confirm Use",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            },
+            text = {
+                Column {
                     Text(
-                        text = "${purchase.remainingQuantity} left",
-                        color = Color.White,
+                        "You are about to use 1 punch from:",
+                        color = Color(0xFFCCCCCC),
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        selectedPurchaseName,
+                        color = Color(0xFF90EE90),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Remaining after use: ${selectedRemainingUses - 1} punches",
+                        color = Color(0xFFFFCC00),
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "⚠️ This action cannot be undone.",
+                        color = Color(0xFFFF6B6B),
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        selectedPurchaseId?.let { userViewModel.deductPurchase(it) }
+                        showConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("YES, USE 1 PUNCH", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showConfirmDialog = false },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("CANCEL", color = Color(0xFF888888))
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { purchase.remainingQuantity.toFloat() / purchase.totalQuantity.toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp),
-                color = Color(0xFF90EE90),
-                trackColor = Color(0xFF444444)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Used: ${purchase.totalQuantity - purchase.remainingQuantity} of ${purchase.totalQuantity}",
-                    color = Color(0xFF888888),
-                    fontSize = 11.sp
-                )
-                Text(
-                    text = "$${purchase.price}",
-                    color = Color(0xFF888888),
-                    fontSize = 11.sp
-                )
-            }
-        }
+        )
     }
 }
 

@@ -15,12 +15,14 @@ class ForumViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getReplyCount(postId: Int): Flow<Int> = dao.getReplyCount(postId)
 
-    fun addPost(author: String, content: String) {
+    fun addPost(author: String, content: String, category: String = "general", photoUri: String? = null) {
         viewModelScope.launch {
             dao.insertPost(
                 ForumPost(
                     author = author,
-                    content = content
+                    content = content,
+                    category = category,
+                    photoUri = photoUri
                 )
             )
         }
@@ -35,6 +37,7 @@ class ForumViewModel(application: Application) : AndroidViewModel(application) {
                     parentId = parentId
                 )
             )
+            dao.incrementReplyCount(parentId)
         }
     }
 

@@ -22,12 +22,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.capstone2.data.RangeLog
 import com.example.capstone2.data.RangeLogViewModel
 
 @Composable
-fun RangeLogScreen(viewModel: RangeLogViewModel = viewModel()) {
+fun RangeLogScreen(navController: NavController, viewModel: RangeLogViewModel = viewModel()) {
     val scrollState = rememberScrollState()
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -49,36 +50,42 @@ fun RangeLogScreen(viewModel: RangeLogViewModel = viewModel()) {
                         colors = listOf(Color(0xFF003D1F), Color(0xFF007236))
                     )
                 )
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.CenterStart)
             ) {
-                Column {
-                    Text(
-                        text = "🎯 RANGE LOG",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Track your shooting sessions",
-                        fontSize = 12.sp,
-                        color = Color(0xFFCCCCCC)
-                    )
-                }
-                FloatingActionButton(
-                    onClick = { showAddDialog = true },
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF007236),
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Log")
-                }
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "🎯 RANGE LOG",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Track your sessions",
+                    fontSize = 11.sp,
+                    color = Color(0xFFCCCCCC)
+                )
+            }
+
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = Color.White,
+                contentColor = Color(0xFF007236),
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(40.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Log")
             }
         }
 

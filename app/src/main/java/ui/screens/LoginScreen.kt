@@ -22,12 +22,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(navController: NavController, userViewModel: UserViewModel = viewModel()) {
+fun LoginScreen(navController: NavController, userViewModel: UserViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
@@ -46,7 +45,7 @@ fun LoginScreen(navController: NavController, userViewModel: UserViewModel = vie
                     popUpTo("login") { inclusive = true }
                 }
             } else {
-                navController.navigate("myaccount") {
+                navController.navigate("profile") {
                     popUpTo("login") { inclusive = true }
                 }
             }
@@ -201,7 +200,7 @@ fun LoginScreen(navController: NavController, userViewModel: UserViewModel = vie
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Admin hint
+                // Demo accounts hint
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
@@ -211,7 +210,7 @@ fun LoginScreen(navController: NavController, userViewModel: UserViewModel = vie
                         Text("Demo Accounts:", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("Admin: admin@kdfgc.org / admin123", color = Color(0xFFCCCCCC), fontSize = 11.sp)
-                        Text("Or create a new member account below", color = Color(0xFF888888), fontSize = 11.sp)
+                        Text("Member: member@kdfgc.org / member123", color = Color(0xFFCCCCCC), fontSize = 11.sp)
                     }
                 }
             }

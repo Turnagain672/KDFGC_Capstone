@@ -25,4 +25,7 @@ interface ForumDao {
 
     @Query("UPDATE forum_posts SET likes = likes - 1 WHERE id = :postId")
     suspend fun unlikePost(postId: Int)
+
+    @Query("UPDATE forum_posts SET replyCount = replyCount + 1 WHERE id = :postId")
+    suspend fun incrementReplyCount(postId: Int)
 }

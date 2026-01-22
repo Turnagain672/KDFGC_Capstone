@@ -34,6 +34,19 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 )
             }
+
+            val member = userDao.getUserByEmail("member@kdfgc.org")
+            if (member == null) {
+                userDao.insertUser(
+                    User(
+                        email = "member@kdfgc.org",
+                        password = "member123",
+                        fullName = "Demo Member",
+                        memberNumber = "MEM001",
+                        isAdmin = false
+                    )
+                )
+            }
         }
     }
 
