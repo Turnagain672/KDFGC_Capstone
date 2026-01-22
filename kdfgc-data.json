@@ -1,0 +1,84 @@
+{
+  "courses": [
+    {
+      "id": "pal",
+      "name": "PAL Course",
+      "fullName": "Canadian Firearms Safety Course",
+      "description": "The CFSC is the mandatory course required to obtain your Possession and Acquisition License (PAL) for non-restricted firearms in Canada.",
+      "price": 150,
+      "duration": "1 Day (8 hours)",
+      "prerequisites": "None",
+      "minAge": "12 years (with parent consent)",
+      "includes": "Manual, exam, certificate",
+      "learnItems": ["Firearm safety rules and ACTS/PROVE", "Ammunition types and identification", "Rifle and shotgun operation", "Safe storage and transportation", "Canadian firearms laws and regulations", "Practical handling demonstration"],
+      "dates": [
+        {"date": "Saturday, February 8, 2026", "time": "9:00 AM - 5:00 PM", "spotsLeft": 4},
+        {"date": "Saturday, February 22, 2026", "time": "9:00 AM - 5:00 PM", "spotsLeft": 8},
+        {"date": "Saturday, March 8, 2026", "time": "9:00 AM - 5:00 PM", "spotsLeft": 12}
+      ]
+    },
+    {
+      "id": "rpal",
+      "name": "RPAL Course",
+      "fullName": "Canadian Restricted Firearms Safety Course",
+      "description": "The CRFSC is required to obtain your Restricted Possession and Acquisition License (RPAL) for restricted firearms such as handguns and AR-15 style rifles.",
+      "price": 100,
+      "duration": "1 Day (8 hours)",
+      "prerequisites": "PAL or CFSC completed",
+      "minAge": "18 years",
+      "includes": "Manual, exam, certificate",
+      "learnItems": ["Restricted firearm safety rules", "Handgun operation and handling", "Revolvers and semi-automatic pistols", "Safe storage requirements for restricted firearms", "Transportation regulations (ATT)", "Practical handling demonstration"],
+      "dates": [
+        {"date": "Sunday, February 9, 2026", "time": "9:00 AM - 5:00 PM", "spotsLeft": 6},
+        {"date": "Sunday, February 23, 2026", "time": "9:00 AM - 5:00 PM", "spotsLeft": 10},
+        {"date": "Sunday, March 9, 2026", "time": "9:00 AM - 5:00 PM", "spotsLeft": 12}
+      ]
+    },
+    {
+      "id": "handgun",
+      "name": "Handgun Safety",
+      "fullName": "Handgun Safety Qualification",
+      "description": "This course is REQUIRED for all new members before using the pistol range unsupervised. Learn KDFGC range rules, safety procedures, and demonstrate safe handgun handling.",
+      "price": 50,
+      "duration": "2 Hours",
+      "prerequisites": "RPAL required",
+      "minAge": "18 years",
+      "includes": "Range orientation, safety test",
+      "learnItems": ["KDFGC pistol range rules and procedures", "Range commands and etiquette", "Safe loading and unloading", "Proper stance and grip basics", "Emergency procedures", "Practical demonstration required"],
+      "dates": [
+        {"date": "Saturday, February 1, 2026", "time": "1:00 PM - 3:00 PM", "spotsLeft": 3},
+        {"date": "Saturday, February 15, 2026", "time": "1:00 PM - 3:00 PM", "spotsLeft": 6},
+        {"date": "Saturday, March 1, 2026", "time": "1:00 PM - 3:00 PM", "spotsLeft": 8}
+      ]
+    },
+    {
+      "id": "pistolqual",
+      "name": "Pistol Qualification",
+      "fullName": "Pistol Safety Qualification",
+      "description": "Advanced qualification for members who want to improve their pistol skills. Covers marksmanship fundamentals, accuracy drills, and timed shooting exercises.",
+      "price": 125,
+      "duration": "4 Hours",
+      "prerequisites": "Handgun Safety completed",
+      "minAge": "18 years",
+      "includes": "Instruction, targets, certification",
+      "learnItems": ["Proper grip and stance refinement", "Sight alignment and sight picture", "Trigger control and follow-through", "Accuracy drills at various distances", "Timed shooting exercises", "Malfunction clearing"],
+      "dates": [
+        {"date": "Saturday, February 8, 2026", "time": "9:00 AM - 1:00 PM", "spotsLeft": 4},
+        {"date": "Saturday, March 14, 2026", "time": "9:00 AM - 1:00 PM", "spotsLeft": 8}
+      ]
+    }
+  ],
+  "events": [
+    {"id": "1", "title": "Tuesday Night Trap", "date": "Every Tuesday", "time": "6:00 PM", "location": "Trap Range", "description": "Weekly trap shooting. All skill levels welcome. $5 per round.", "category": "weekly"},
+    {"id": "2", "title": "IPSC Match", "date": "Saturday, February 15, 2026", "time": "9:00 AM", "location": "Pistol Range", "description": "Monthly IPSC practical shooting competition.", "category": "competition"},
+    {"id": "3", "title": "Turkey Shoot", "date": "Saturday, March 22, 2026", "time": "10:00 AM", "location": "Trap Range", "description": "Annual turkey shoot competition. Win prizes!", "category": "special"}
+  ],
+  "clubInfo": {
+    "name": "Kelowna & District Fish and Game Club",
+    "address": "2319 Rifle Road, Kelowna, BC",
+    "phone": "(250) 762-2111",
+    "email": "info@kdfgc.org",
+    "rangeHours": "8:00 AM - Dusk (Daily)",
+    "officeHours": "Tue & Thu 6-8 PM, Sat 10 AM-2 PM"
+  }
+}
