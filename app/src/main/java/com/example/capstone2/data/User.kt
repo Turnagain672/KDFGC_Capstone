@@ -8,9 +8,15 @@ data class User(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val email: String,
     val password: String,
-    val fullName: String,
-    val memberNumber: String,
-    val isAdmin: Boolean = false
+    val fullName: String = "",
+    val name: String = "",
+    val memberNumber: String = "",
+    val membershipType: String = "Pending",
+    val isAdmin: Boolean = false,
+    val phone: String = "",
+    val palNumber: String = "",
+    val registrationDate: Long = System.currentTimeMillis(),
+    val isApproved: Boolean = false
 )
 
 @Entity(tableName = "purchases")

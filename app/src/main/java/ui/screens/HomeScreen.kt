@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.capstone2.data.KdfgcViewModel
+import java.net.URLEncoder
 
 @Composable
 fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = viewModel()) {
@@ -35,21 +36,15 @@ fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = vi
             .background(Color(0xFF1A1A1A))
             .verticalScroll(scrollState)
     ) {
-        // Top Nav Bar
+        // Top Nav Bar - Only LOG IN button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFF003D1F))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TopNavItem("HOME") { navController.navigate("home") }
-                TopNavItem("JOIN US") { navController.navigate("join") }
-                TopNavItem("RENEW") { navController.navigate("renew") }
-                TopNavItem("STORE") { navController.navigate("store") }
-            }
             Button(
                 onClick = { navController.navigate("login") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
@@ -168,7 +163,7 @@ fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = vi
             }
         }
 
-        // Range Hours Card - Now from API
+        // Range Hours Card
         InfoCard(title = "🕐 RANGE HOURS") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -203,50 +198,71 @@ fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = vi
             )
         }
 
-        // Upcoming Events Card - Now from API
+        // Upcoming Events Card - Clickable
         InfoCard(title = "📅 UPCOMING EVENTS") {
             val events = kdfgcData?.events
             if (events.isNullOrEmpty()) {
-                EventItem("Sunday Night Archery League", "Session 3 of 13 • Indoor Range")
-                EventItem("Open Archery", "Session 9 of 15 • Archery Range")
-                EventItem("Trapshooting", "Saturdays • Trap Range")
+                ClickableEventItem("Sunday Night Archery League", "Session 3 of 13 • Indoor Range") {
+                    navController.navigate("eventdetail/Sunday Night Archery League")
+                }
+                ClickableEventItem("Open Archery", "Session 9 of 15 • Archery Range") {
+                    navController.navigate("eventdetail/Open Archery")
+                }
+                ClickableEventItem("Trapshooting", "Saturdays • Trap Range") {
+                    navController.navigate("eventdetail/Trapshooting")
+                }
             } else {
                 events.forEach { event ->
-                    EventItem(event.title, "${event.date} • ${event.location}")
+                    val encodedTitle = URLEncoder.encode(event.title, "UTF-8")
+                    ClickableEventItem(event.title, "${event.date} • ${event.location}") {
+                        navController.navigate("eventdetail/$encodedTitle")
+                    }
                 }
             }
         }
 
-        // Featured News
+        // Featured News - Clickable
         InfoCard(title = "📰 FEATURED NEWS") {
-            Text(
-                text = "KDFGC Pistol Members, Recreational Pistol",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Improve Your Pistol Skills",
-                color = Color(0xFF90EE90),
-                fontSize = 12.sp
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate("article/pistol") }
+            ) {
+                Text(
+                    text = "KDFGC Pistol Members, Recreational Pistol",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Improve Your Pistol Skills →",
+                    color = Color(0xFF90EE90),
+                    fontSize = 12.sp
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = Color(0xFF333333))
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Youth Core Program This Winter",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Programs available for youth members",
-                color = Color(0xFF888888),
-                fontSize = 12.sp
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate("article/youth") }
+            ) {
+                Text(
+                    text = "Youth Core Program This Winter",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Programs available for youth members →",
+                    color = Color(0xFF888888),
+                    fontSize = 12.sp
+                )
+            }
         }
 
-        // Courses - Now from API
+        // Courses
         Text(
             text = "COURSES & TRAINING",
             fontSize = 13.sp,
@@ -310,7 +326,7 @@ fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = vi
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Contact Info - Now from API
+        // Contact Info
         InfoCard(title = "📍 CONTACT US") {
             Text(
                 kdfgcData?.clubInfo?.name ?: "Kelowna and District Fish & Game Club",
@@ -339,17 +355,6 @@ fun HomeScreen(navController: NavController, kdfgcViewModel: KdfgcViewModel = vi
 
         Spacer(modifier = Modifier.height(32.dp))
     }
-}
-
-@Composable
-fun TopNavItem(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        color = Color.White,
-        fontSize = 10.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.clickable { onClick() }
-    )
 }
 
 @Composable
@@ -421,10 +426,15 @@ fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun EventItem(title: String, details: String) {
-    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+fun ClickableEventItem(title: String, details: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 6.dp)
+    ) {
         Text(text = title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text(text = details, color = Color(0xFF888888), fontSize = 11.sp)
+        Text(text = "$details →", color = Color(0xFF888888), fontSize = 11.sp)
     }
     HorizontalDivider(color = Color(0xFF333333))
 }

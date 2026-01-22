@@ -29,7 +29,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Schedule background data sync every 6 hours
         WorkManagerHelper.schedulePeriodicSync(this)
 
         setContent {
@@ -130,6 +129,15 @@ fun MainApp() {
             }
             composable("myaccount") { MyAccountScreen(navController = navController, userViewModel = userViewModel) }
             composable("adminpanel") { AdminPanelScreen(navController = navController, userViewModel = userViewModel) }
+            composable("eventdetail/{eventName}") { backStackEntry ->
+                val eventName = backStackEntry.arguments?.getString("eventName") ?: "Event"
+                EventDetailScreen(navController = navController, eventName = eventName)
+            }
+            composable("article/{articleId}") { backStackEntry ->
+                val articleId = backStackEntry.arguments?.getString("articleId") ?: ""
+                ArticleScreen(navController = navController, articleId = articleId)
+            }
+            composable("memberregistration") { MemberRegistrationScreen(navController = navController) }
         }
     }
 }

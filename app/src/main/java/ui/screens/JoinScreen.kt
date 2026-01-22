@@ -1,6 +1,7 @@
 package com.example.capstone2.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import java.net.URLEncoder
 
 @Composable
 fun JoinScreen(navController: NavController) {
@@ -81,10 +83,10 @@ fun JoinScreen(navController: NavController) {
             Text("MEMBERSHIP OPTIONS", color = Color(0xFF90EE90), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
 
-            MembershipOption("Adult", "$150/year", "Full access, ages 19+")
-            MembershipOption("Family", "$250/year", "2 adults + children under 19")
-            MembershipOption("Senior", "$100/year", "Ages 65+")
-            MembershipOption("Youth", "$75/year", "Ages 12-18, supervised")
+            MembershipOptionClickable("Adult Membership", "150.00", "Full access, ages 19+", navController)
+            MembershipOptionClickable("Family Membership", "250.00", "2 adults + children under 19", navController)
+            MembershipOptionClickable("Senior Membership", "100.00", "Ages 65+", navController)
+            MembershipOptionClickable("Youth Membership", "75.00", "Ages 12-18, supervised", navController)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -110,7 +112,7 @@ fun JoinScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { navController.navigate("login") },
+                onClick = { navController.navigate("memberregistration") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -153,11 +155,13 @@ fun BenefitItem(text: String) {
 }
 
 @Composable
-fun MembershipOption(title: String, price: String, description: String) {
+fun MembershipOptionClickable(title: String, price: String, description: String, navController: NavController) {
+    val encodedTitle = URLEncoder.encode(title, "UTF-8")
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable { navController.navigate("checkout/$encodedTitle/$price") },
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
     ) {
@@ -172,7 +176,10 @@ fun MembershipOption(title: String, price: String, description: String) {
                 Text(title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(description, color = Color(0xFF888888), fontSize = 12.sp)
             }
-            Text(price, color = Color(0xFF90EE90), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Column(horizontalAlignment = Alignment.End) {
+                Text("$$price", color = Color(0xFF90EE90), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Tap to purchase →", color = Color(0xFF007236), fontSize = 10.sp)
+            }
         }
     }
 }
