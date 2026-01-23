@@ -28,9 +28,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         WorkManagerHelper.schedulePeriodicSync(this)
-
         setContent {
             Capstone2Theme {
                 MainApp()
@@ -62,26 +60,18 @@ fun MainApp() {
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomNav) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     bottomNavItems.forEach { item ->
                         NavigationBarItem(
                             icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) },
                             selected = currentRoute == item.route,
                             onClick = {
-                                // If clicking Profile and not logged in, go to login
                                 if (item.route == "profile" && currentUser == null) {
-                                    navController.navigate("login") {
-                                        launchSingleTop = true
-                                    }
+                                    navController.navigate("login") { launchSingleTop = true }
                                 } else {
                                     navController.navigate(item.route) {
-                                        popUpTo("home") {
-                                            inclusive = item.route == "home"
-                                            saveState = true
-                                        }
+                                        popUpTo("home") { inclusive = item.route == "home"; saveState = true }
                                         launchSingleTop = true
                                         restoreState = item.route != "home"
                                     }
@@ -98,11 +88,7 @@ fun MainApp() {
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = "home",
-            modifier = Modifier.padding(innerPadding)
-        ) {
+        NavHost(navController = navController, startDestination = "home", modifier = Modifier.padding(innerPadding)) {
             composable("home") { HomeScreen(navController = navController) }
             composable("events") { EventsScreen(navController = navController) }
             composable("forum") { ForumScreen(navController = navController, userViewModel = userViewModel) }
@@ -139,7 +125,7 @@ fun MainApp() {
                 CheckoutScreen(navController = navController, itemName = itemName, price = price, userViewModel = userViewModel)
             }
             composable("myaccount") { MyAccountScreen(navController = navController, userViewModel = userViewModel) }
-            composable("adminpanel") { AdminPanelScreen(navController = navController, userViewModel = userViewModel) }
+            composable("adminpanel") { AdminPanelScreen(navController = navController) }
             composable("eventdetail/{eventName}") { backStackEntry ->
                 val eventName = backStackEntry.arguments?.getString("eventName") ?: "Event"
                 EventDetailScreen(navController = navController, eventName = eventName)
@@ -153,8 +139,4 @@ fun MainApp() {
     }
 }
 
-data class BottomNavItem(
-    val route: String,
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector
-)
+data class BottomNavItem(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)

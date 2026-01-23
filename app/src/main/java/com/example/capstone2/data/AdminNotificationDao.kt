@@ -11,14 +11,8 @@ interface AdminNotificationDao {
     @Query("SELECT * FROM admin_notifications WHERE isArchived = 1 ORDER BY timestamp DESC")
     fun getArchivedNotifications(): Flow<List<AdminNotification>>
 
-    @Query("SELECT * FROM admin_notifications WHERE isRead = 0 AND isArchived = 0 ORDER BY timestamp DESC")
-    fun getUnreadNotifications(): Flow<List<AdminNotification>>
-
     @Query("SELECT COUNT(*) FROM admin_notifications WHERE isRead = 0 AND isArchived = 0")
     fun getUnreadCount(): Flow<Int>
-
-    @Query("SELECT * FROM admin_notifications WHERE type = :type AND isArchived = 0 ORDER BY timestamp DESC")
-    fun getNotificationsByType(type: String): Flow<List<AdminNotification>>
 
     @Query("SELECT * FROM admin_notifications WHERE actionRequired = 1 AND isArchived = 0 ORDER BY timestamp DESC")
     fun getActionRequiredNotifications(): Flow<List<AdminNotification>>
@@ -43,9 +37,6 @@ interface AdminNotificationDao {
 
     @Delete
     suspend fun deleteNotification(notification: AdminNotification)
-
-    @Query("DELETE FROM admin_notifications WHERE isArchived = 1 AND timestamp < :olderThan")
-    suspend fun deleteOldArchived(olderThan: Long)
 }
 
 @Dao
@@ -61,9 +52,6 @@ interface InvoiceDao {
 
     @Query("SELECT * FROM invoices WHERE isFlagged = 1 ORDER BY purchaseDate DESC")
     fun getFlaggedInvoices(): Flow<List<Invoice>>
-
-    @Query("SELECT * FROM invoices WHERE paymentStatus = :status ORDER BY purchaseDate DESC")
-    fun getInvoicesByStatus(status: String): Flow<List<Invoice>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertInvoice(invoice: Invoice): Long

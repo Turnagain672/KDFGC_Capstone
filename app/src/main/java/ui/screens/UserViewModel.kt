@@ -20,13 +20,11 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchResults = MutableStateFlow<List<User>>(emptyList())
     val searchResults: StateFlow<List<User>> = _searchResults.asStateFlow()
 
-    // Notifications
     val activeNotifications: Flow<List<AdminNotification>> = notificationDao.getActiveNotifications()
     val archivedNotifications: Flow<List<AdminNotification>> = notificationDao.getArchivedNotifications()
     val unreadCount: Flow<Int> = notificationDao.getUnreadCount()
     val actionRequiredNotifications: Flow<List<AdminNotification>> = notificationDao.getActionRequiredNotifications()
 
-    // Invoices
     val allInvoices: Flow<List<Invoice>> = invoiceDao.getAllInvoices()
     val flaggedInvoices: Flow<List<Invoice>> = invoiceDao.getFlaggedInvoices()
 
@@ -58,7 +56,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            // Add sample notifications for demo
             val existingNotifications = notificationDao.getActiveNotifications().first()
             if (existingNotifications.isEmpty()) {
                 addSampleNotifications()
@@ -68,13 +65,33 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun addSampleNotifications() {
         val now = System.currentTimeMillis()
+
+        val sampleMembers = listOf(
+            User(email = "john@example.com", password = "pass123", fullName = "John Doe", memberNumber = "MEM002", isAdmin = false),
+            User(email = "jane@example.com", password = "pass123", fullName = "Jane Smith", memberNumber = "MEM003", isAdmin = false),
+            User(email = "mike@example.com", password = "pass123", fullName = "Mike Johnson", memberNumber = "MEM004", isAdmin = false),
+            User(email = "sarah@example.com", password = "pass123", fullName = "Sarah Wilson", memberNumber = "MEM005", isAdmin = false),
+            User(email = "tom@example.com", password = "pass123", fullName = "Tom Brown", memberNumber = "MEM006", isAdmin = false)
+        )
+
+        val userIds = mutableListOf<Int>()
+        sampleMembers.forEach { user ->
+            val existing = userDao.getUserByEmail(user.email)
+            if (existing == null) {
+                val id = userDao.insertUser(user)
+                userIds.add(id.toInt())
+            } else {
+                userIds.add(existing.id)
+            }
+        }
+
         listOf(
             AdminNotification(
                 type = "document",
                 title = "Document Upload",
                 message = "John Doe uploaded PAL License",
                 timestamp = now - 2 * 60 * 1000,
-                relatedUserId = 2,
+                relatedUserId = userIds.getOrNull(0),
                 actionRequired = true,
                 actionType = "approve_doc"
             ),
@@ -83,7 +100,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 title = "New Purchase",
                 message = "Jane Smith purchased 10-Visit Pass",
                 timestamp = now - 15 * 60 * 1000,
-                relatedUserId = 3,
+                relatedUserId = userIds.getOrNull(1),
                 relatedPurchaseId = 1
             ),
             AdminNotification(
@@ -91,7 +108,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 title = "New Member",
                 message = "Mike Johnson registered",
                 timestamp = now - 60 * 60 * 1000,
-                relatedUserId = 4,
+                relatedUserId = userIds.getOrNull(2),
                 actionRequired = true,
                 actionType = "contact_member"
             ),
@@ -100,7 +117,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 title = "Document Upload",
                 message = "Sarah Wilson uploaded RPAL Certificate",
                 timestamp = now - 2 * 60 * 60 * 1000,
-                relatedUserId = 5,
+                relatedUserId = userIds.getOrNull(3),
                 actionRequired = true,
                 actionType = "approve_doc"
             ),
@@ -117,7 +134,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 title = "Payment Issue",
                 message = "Chargeback received for Tom Brown's 5-Visit Pass",
                 timestamp = now - 4 * 60 * 60 * 1000,
-                relatedUserId = 6,
+                relatedUserId = userIds.getOrNull(4),
                 relatedPurchaseId = 2,
                 actionRequired = true,
                 actionType = "review_payment"
@@ -146,7 +163,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         )
         _currentUser.value = userDao.getUserById(userId.toInt())
 
-        // Create notification for new member
         notificationDao.insertNotification(
             AdminNotification(
                 type = "member",
@@ -201,7 +217,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 )
             )
 
-            // Create invoice
             val transactionId = "TXN${System.currentTimeMillis()}"
             invoiceDao.insertInvoice(
                 Invoice(
@@ -215,7 +230,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 )
             )
 
-            // Create notification
             notificationDao.insertNotification(
                 AdminNotification(
                     type = "purchase",
@@ -233,8 +247,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             purchaseDao.deductOne(purchaseId)
         }
     }
-
-    // ==================== NOTIFICATION FUNCTIONS ====================
 
     fun markNotificationAsRead(notificationId: Int) {
         viewModelScope.launch {
@@ -290,8 +302,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // ==================== INVOICE FUNCTIONS ====================
-
     fun getInvoiceForPurchase(purchaseId: Int, onResult: (Invoice?) -> Unit) {
         viewModelScope.launch {
             val invoice = invoiceDao.getInvoiceForPurchase(purchaseId)
@@ -303,7 +313,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             invoiceDao.flagInvoice(invoiceId, reason)
 
-            // Create notification for flagged invoice
             notificationDao.insertNotification(
                 AdminNotification(
                     type = "chargeback",
@@ -330,7 +339,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sendPaymentReminder(userId: Int, userName: String, invoiceId: Int) {
         viewModelScope.launch {
-            // Create notification that reminder was sent
             notificationDao.insertNotification(
                 AdminNotification(
                     type = "alert",
