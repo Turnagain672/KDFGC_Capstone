@@ -46,6 +46,7 @@ fun MainApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val userViewModel: UserViewModel = viewModel()
+    val currentUser by userViewModel.currentUser.collectAsState()
 
     val bottomNavItems = listOf(
         BottomNavItem("home", "Home", Icons.Default.Home),
@@ -70,13 +71,19 @@ fun MainApp() {
                             label = { Text(item.label) },
                             selected = currentRoute == item.route,
                             onClick = {
-                                if (currentRoute != item.route) {
+                                // If clicking Profile and not logged in, go to login
+                                if (item.route == "profile" && currentUser == null) {
+                                    navController.navigate("login") {
+                                        launchSingleTop = true
+                                    }
+                                } else {
                                     navController.navigate(item.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
+                                        popUpTo("home") {
+                                            inclusive = item.route == "home"
                                             saveState = true
                                         }
                                         launchSingleTop = true
-                                        restoreState = true
+                                        restoreState = item.route != "home"
                                     }
                                 }
                             },

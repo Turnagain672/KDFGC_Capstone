@@ -33,7 +33,6 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
             .background(Color(0xFF1A1A1A))
             .verticalScroll(scrollState)
     ) {
-        // Header with Profile
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -102,18 +101,11 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // My Account Button (Passes & Cards)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .clickable {
-                    if (currentUser != null) {
-                        navController.navigate("myaccount")
-                    } else {
-                        navController.navigate("login")
-                    }
-                },
+                .clickable { navController.navigate("myaccount") },
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF007236))
         ) {
@@ -138,7 +130,7 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = if (currentUser != null) "View passes, cards & purchases" else "Log in to view your passes",
+                        text = "View passes, cards & purchases",
                         color = Color(0xFFCCFFCC),
                         fontSize = 12.sp
                     )
@@ -154,7 +146,6 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Membership Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -182,7 +173,6 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Quick Stats
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -196,7 +186,6 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Certifications Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -227,7 +216,6 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Settings Section
         Text(
             text = "SETTINGS",
             fontSize = 12.sp,
@@ -248,7 +236,6 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Logout Button
         Button(
             onClick = {
                 userViewModel.logout()
