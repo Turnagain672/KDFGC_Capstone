@@ -40,13 +40,19 @@ data class ForumCategory(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ForumScreen(navController: NavController, viewModel: ForumViewModel = viewModel()) {
+fun ForumScreen(
+    navController: NavController,
+    viewModel: ForumViewModel = viewModel(),
+    userViewModel: UserViewModel = viewModel()
+) {
     var selectedCategory by remember { mutableStateOf("all") }
     var showNewPostSheet by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
 
     val posts by viewModel.allPosts.collectAsState(initial = emptyList())
+    val currentUser by userViewModel.currentUser.collectAsState()
+    val isAdmin = currentUser?.isAdmin == true
 
     val categories = listOf(
         ForumCategory("all", "All Posts", Icons.Default.Forum, Color(0xFF007236), "Everything"),
@@ -59,10 +65,12 @@ fun ForumScreen(navController: NavController, viewModel: ForumViewModel = viewMo
         ForumCategory("marketplace", "Buy/Sell", Icons.Default.Store, Color(0xFF00BCD4), "Marketplace")
     )
 
+    // Filter out hidden posts for non-admins
     val filteredPosts = posts.filter { post ->
         (selectedCategory == "all" || post.category == selectedCategory) &&
                 (searchQuery.isEmpty() || post.content.contains(searchQuery, ignoreCase = true) ||
-                        post.author.contains(searchQuery, ignoreCase = true))
+                        post.author.contains(searchQuery, ignoreCase = true)) &&
+                (isAdmin || !post.isHidden)
     }.sortedByDescending { it.timestamp }
 
     Column(
@@ -93,7 +101,7 @@ fun ForumScreen(navController: NavController, viewModel: ForumViewModel = viewMo
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("MEMBER FORUM", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text("${posts.size} discussions", fontSize = 11.sp, color = Color(0xFFCCCCCC))
+                Text("${posts.count { !it.isHidden }} discussions", fontSize = 11.sp, color = Color(0xFFCCCCCC))
             }
 
             IconButton(
@@ -166,7 +174,12 @@ fun ForumScreen(navController: NavController, viewModel: ForumViewModel = viewMo
         } else {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 80.dp)) {
                 items(filteredPosts, key = { it.id }) { post ->
-                    ForumPostCard(post, viewModel, categories)
+                    ForumPostCard(
+                        post = post,
+                        viewModel = viewModel,
+                        categories = categories,
+                        isAdmin = isAdmin
+                    )
                 }
             }
         }
@@ -177,7 +190,7 @@ fun ForumScreen(navController: NavController, viewModel: ForumViewModel = viewMo
             categories = categories.filter { it.id != "all" },
             onDismiss = { showNewPostSheet = false },
             onPost = { content, category, photoUri ->
-                viewModel.addPost("You", content, category, photoUri)
+                viewModel.addPost(currentUser?.fullName ?: "Anonymous", content, category, photoUri)
                 showNewPostSheet = false
             }
         )
@@ -293,11 +306,18 @@ fun NewPostBottomSheet(
 }
 
 @Composable
-fun ForumPostCard(post: ForumPost, viewModel: ForumViewModel, categories: List<ForumCategory>) {
+fun ForumPostCard(
+    post: ForumPost,
+    viewModel: ForumViewModel,
+    categories: List<ForumCategory>,
+    isAdmin: Boolean = false
+) {
     var isLiked by remember { mutableStateOf(false) }
     var showReplies by remember { mutableStateOf(false) }
     var replyText by remember { mutableStateOf("") }
     var showReplyInput by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var showAdminMenu by remember { mutableStateOf(false) }
 
     val replies by viewModel.getReplies(post.id).collectAsState(initial = emptyList())
     val replyCount by viewModel.getReplyCount(post.id).collectAsState(initial = 0)
@@ -319,9 +339,47 @@ fun ForumPostCard(post: ForumPost, viewModel: ForumViewModel, categories: List<F
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))
+        colors = CardDefaults.cardColors(
+            containerColor = if (post.isHidden) Color(0xFF3D1F1F) else Color(0xFF252525)
+        )
     ) {
         Column(Modifier.padding(16.dp)) {
+            // Hidden banner for admins
+            if (post.isHidden && isAdmin) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFFF5252).copy(alpha = 0.2f),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.VisibilityOff, null, tint = Color(0xFFFF5252), modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("HIDDEN - Only visible to admins", color = Color(0xFFFF5252), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Flagged banner
+            if (post.reportCount > 0 && isAdmin) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFFF9800).copy(alpha = 0.2f),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Flag, null, tint = Color(0xFFFF9800), modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("${post.reportCount} report(s)", color = Color(0xFFFF9800), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 if (category != null) {
                     Surface(shape = RoundedCornerShape(6.dp), color = category.color.copy(alpha = 0.2f)) {
@@ -350,8 +408,58 @@ fun ForumPostCard(post: ForumPost, viewModel: ForumViewModel, categories: List<F
                     Text("Member", color = Color(0xFF888888), fontSize = 11.sp)
                 }
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = { viewModel.deletePost(post) }) {
-                    Icon(Icons.Default.Delete, "Delete", tint = Color(0xFF666666), modifier = Modifier.size(18.dp))
+
+                // Admin menu or regular delete
+                Box {
+                    IconButton(onClick = { if (isAdmin) showAdminMenu = true else viewModel.deletePost(post) }) {
+                        Icon(
+                            if (isAdmin) Icons.Default.MoreVert else Icons.Default.Delete,
+                            "Options",
+                            tint = Color(0xFF666666),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showAdminMenu,
+                        onDismissRequest = { showAdminMenu = false },
+                        modifier = Modifier.background(Color(0xFF333333))
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (post.isHidden) "Unhide Post" else "Hide Post", color = Color.White) },
+                            onClick = {
+                                viewModel.toggleHidePost(post.id)
+                                showAdminMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    if (post.isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    null,
+                                    tint = if (post.isHidden) Color(0xFF4CAF50) else Color(0xFFFF5252)
+                                )
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Clear Reports", color = Color.White) },
+                            onClick = {
+                                viewModel.clearReports(post.id)
+                                showAdminMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete Post", color = Color(0xFFFF5252)) },
+                            onClick = {
+                                viewModel.deletePost(post)
+                                showAdminMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Delete, null, tint = Color(0xFFFF5252))
+                            }
+                        )
+                    }
                 }
             }
 
@@ -398,6 +506,15 @@ fun ForumPostCard(post: ForumPost, viewModel: ForumViewModel, categories: List<F
                     Spacer(Modifier.width(4.dp))
                     Text("$replyCount", color = if (showReplies) Color(0xFF90EE90) else Color(0xFF888888), fontSize = 12.sp)
                 }
+
+                // Report button (for non-admins)
+                if (!isAdmin) {
+                    TextButton(onClick = { showReportDialog = true }) {
+                        Icon(Icons.Default.Flag, null, tint = Color(0xFF888888), modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Report", color = Color(0xFF888888), fontSize = 12.sp)
+                    }
+                }
             }
 
             if (showReplyInput) {
@@ -434,6 +551,62 @@ fun ForumPostCard(post: ForumPost, viewModel: ForumViewModel, categories: List<F
                 replies.forEach { reply -> ReplyCard(reply) }
             }
         }
+    }
+
+    // Report Dialog
+    if (showReportDialog) {
+        var reportReason by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showReportDialog = false },
+            title = { Text("Report Post", color = Color.White) },
+            text = {
+                Column {
+                    Text("Why are you reporting this post?", color = Color(0xFFCCCCCC), fontSize = 14.sp)
+                    Spacer(Modifier.height(12.dp))
+
+                    val reasons = listOf("Inappropriate content", "Spam", "Harassment", "Misinformation", "Other")
+                    reasons.forEach { reason ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = reportReason == reason,
+                                onClick = { reportReason = reason },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Color(0xFFFF6B6B),
+                                    unselectedColor = Color(0xFF888888)
+                                )
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(reason, color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (reportReason.isNotBlank()) {
+                            viewModel.reportPost(post.id)
+                            showReportDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB22222)),
+                    enabled = reportReason.isNotBlank()
+                ) {
+                    Text("REPORT")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReportDialog = false }) {
+                    Text("CANCEL", color = Color(0xFF888888))
+                }
+            },
+            containerColor = Color(0xFF252525)
+        )
     }
 }
 

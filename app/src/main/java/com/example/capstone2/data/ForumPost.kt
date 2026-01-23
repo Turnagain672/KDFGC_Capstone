@@ -14,5 +14,7 @@ data class ForumPost(
     val parentId: Int? = null,
     val category: String = "general",
     val replyCount: Int = 0,
-    val photoUri: String? = null
+    val photoUri: String? = null,
+    val isHidden: Boolean = false,
+    val reportCount: Int = 0
 )

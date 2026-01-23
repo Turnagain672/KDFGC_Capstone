@@ -105,7 +105,7 @@ fun MainApp() {
         ) {
             composable("home") { HomeScreen(navController = navController) }
             composable("events") { EventsScreen(navController = navController) }
-            composable("forum") { ForumScreen(navController = navController) }
+            composable("forum") { ForumScreen(navController = navController, userViewModel = userViewModel) }
             composable("rangelog") { RangeLogScreen(navController = navController) }
             composable("profile") { ProfileScreen(navController = navController, userViewModel = userViewModel) }
             composable("editprofile") { EditProfileScreen(navController = navController) }

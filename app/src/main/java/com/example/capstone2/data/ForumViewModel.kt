@@ -10,6 +10,9 @@ class ForumViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).forumDao()
 
     val allPosts: Flow<List<ForumPost>> = dao.getAllPosts()
+    val visiblePosts: Flow<List<ForumPost>> = dao.getVisiblePosts()
+    val hiddenPosts: Flow<List<ForumPost>> = dao.getHiddenPosts()
+    val flaggedPosts: Flow<List<ForumPost>> = dao.getFlaggedPosts()
 
     fun getReplies(postId: Int): Flow<List<ForumPost>> = dao.getReplies(postId)
 
@@ -56,6 +59,36 @@ class ForumViewModel(application: Application) : AndroidViewModel(application) {
     fun unlikePost(postId: Int) {
         viewModelScope.launch {
             dao.unlikePost(postId)
+        }
+    }
+
+    fun toggleHidePost(postId: Int) {
+        viewModelScope.launch {
+            dao.toggleHidePost(postId)
+        }
+    }
+
+    fun hidePost(postId: Int) {
+        viewModelScope.launch {
+            dao.hidePost(postId)
+        }
+    }
+
+    fun unhidePost(postId: Int) {
+        viewModelScope.launch {
+            dao.unhidePost(postId)
+        }
+    }
+
+    fun reportPost(postId: Int) {
+        viewModelScope.launch {
+            dao.reportPost(postId)
+        }
+    }
+
+    fun clearReports(postId: Int) {
+        viewModelScope.launch {
+            dao.clearReports(postId)
         }
     }
 }
