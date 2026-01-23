@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.AccessTime
@@ -39,26 +40,31 @@ fun EventsScreen(navController: NavController) {
                         colors = listOf(Color(0xFF003D1F), Color(0xFF007236))
                     )
                 )
-                .padding(20.dp)
+                .padding(16.dp)
         ) {
-            Column {
+            IconButton(
+                onClick = { navController.navigate("home") },
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Column(modifier = Modifier.align(Alignment.Center)) {
                 Text(
                     text = "📅 UPCOMING EVENTS",
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     letterSpacing = 1.sp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "January 2026 • Kelowna & District Fish and Game Club",
-                    fontSize = 12.sp,
-                    color = Color(0xFFCCCCCC)
-                )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "January 2026 • Kelowna & District Fish and Game Club",
+            fontSize = 12.sp,
+            color = Color(0xFFCCCCCC),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
         SectionHeader("THIS WEEK")
 
