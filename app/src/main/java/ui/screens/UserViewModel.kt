@@ -381,4 +381,16 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun updateMemberStatus(userId: Int, status: String) {
+        viewModelScope.launch {
+            userDao.updateMembershipType(userId, status)
+        }
+    }
+
+    fun updateMemberInfo(userId: Int, phone: String, palNumber: String) {
+        viewModelScope.launch {
+            userDao.updateMemberInfo(userId, phone, palNumber)
+        }
+    }
 }

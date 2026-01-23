@@ -26,7 +26,12 @@ interface UserDao {
     @Update
     suspend fun updateUser(user: User)
 
-    // Certification updates
+    @Query("UPDATE users SET membershipType = :status WHERE id = :userId")
+    suspend fun updateMembershipType(userId: Int, status: String)
+
+    @Query("UPDATE users SET phone = :phone, palNumber = :palNumber WHERE id = :userId")
+    suspend fun updateMemberInfo(userId: Int, phone: String, palNumber: String)
+
     @Query("UPDATE users SET hasPAL = :value, palIssueDate = :issueDate, palExpiry = :expiry WHERE id = :userId")
     suspend fun updatePAL(userId: Int, value: Boolean, issueDate: Long, expiry: Long)
 
@@ -63,7 +68,6 @@ interface UserDao {
     @Query("UPDATE users SET isApproved = :approved WHERE id = :userId")
     suspend fun updateApprovalStatus(userId: Int, approved: Boolean)
 
-    // Get members with expiring certifications
     @Query("SELECT * FROM users WHERE isAdmin = 0 AND (palExpiry > 0 AND palExpiry < :threshold)")
     fun getMembersWithExpiringPAL(threshold: Long): Flow<List<User>>
 
