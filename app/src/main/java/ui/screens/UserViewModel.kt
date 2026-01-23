@@ -353,4 +353,32 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun getUserById(userId: Int): User? {
         return userDao.getUserById(userId)
     }
+
+    fun sendAdminMessage(subject: String, body: String, targetUserIds: List<Int>) {
+        viewModelScope.launch {
+            if (targetUserIds.isEmpty()) {
+                notificationDao.insertNotification(
+                    AdminNotification(
+                        type = "alert",
+                        title = "Admin Message Sent",
+                        message = "Broadcast: $subject",
+                        actionRequired = false
+                    )
+                )
+            } else {
+                targetUserIds.forEach { userId ->
+                    val user = userDao.getUserById(userId)
+                    notificationDao.insertNotification(
+                        AdminNotification(
+                            type = "alert",
+                            title = "Message Sent",
+                            message = "Message sent to ${user?.fullName ?: "Member"}: $subject",
+                            relatedUserId = userId,
+                            actionRequired = false
+                        )
+                    )
+                }
+            }
+        }
+    }
 }

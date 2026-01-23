@@ -86,12 +86,12 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFF90EE90))
+                        .background(if (currentUser?.isAdmin == true) Color(0xFFFF6B6B) else Color(0xFF90EE90))
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "✓ ACTIVE MEMBER",
-                        color = Color(0xFF003D1F),
+                        text = if (currentUser?.isAdmin == true) "⚡ ADMIN" else "✓ ACTIVE MEMBER",
+                        color = if (currentUser?.isAdmin == true) Color.White else Color(0xFF003D1F),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -212,6 +212,25 @@ fun ProfileScreen(navController: NavController, userViewModel: UserViewModel) {
                 CertRow("Handgun Basic Course", false)
                 CertRow("Handgun Level 2 Course", false)
             }
+        }
+
+        // Admin Section - Only visible for admin users
+        if (currentUser?.isAdmin == true) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "ADMIN",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFF6B6B),
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            AdminSettingsItem(Icons.Default.Dashboard, "Admin Panel", "Members, notifications & invoices") { navController.navigate("adminpanel") }
+            AdminSettingsItem(Icons.Default.Store, "Store Management", "Manage products & pricing") { navController.navigate("admin") }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -341,6 +360,44 @@ fun SettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: ()
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0xFF007236)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = subtitle, color = Color(0xFF888888), fontSize = 11.sp)
+            }
+
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF888888), modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+fun AdminSettingsItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2525))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFFFF6B6B)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))

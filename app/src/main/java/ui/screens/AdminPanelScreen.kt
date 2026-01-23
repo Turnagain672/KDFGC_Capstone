@@ -1,5 +1,6 @@
 package com.example.capstone2.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,8 +36,34 @@ fun AdminPanelScreen(navController: NavController) {
     var selectedMemberId by remember { mutableStateOf<Int?>(null) }
     var selectedInvoice by remember { mutableStateOf<Invoice?>(null) }
 
+    // Message dialog state
+    var showMessageDialog by remember { mutableStateOf(false) }
+    var messageRecipient by remember { mutableStateOf("") }
+    var messageSubject by remember { mutableStateOf("") }
+    var messageBody by remember { mutableStateOf("") }
+    var messageTargetUserIds by remember { mutableStateOf<List<Int>>(emptyList()) }
+
+    BackHandler(enabled = selectedMemberId != null || selectedInvoice != null) {
+        if (selectedMemberId != null) {
+            selectedMemberId = null
+        } else if (selectedInvoice != null) {
+            selectedInvoice = null
+        }
+    }
+
     if (selectedMemberId != null) {
-        MemberDetailView(userId = selectedMemberId!!, userViewModel = userViewModel, onBack = { selectedMemberId = null })
+        MemberDetailView(
+            userId = selectedMemberId!!,
+            userViewModel = userViewModel,
+            onBack = { selectedMemberId = null },
+            onMessage = { user ->
+                messageRecipient = user.fullName
+                messageSubject = ""
+                messageBody = ""
+                messageTargetUserIds = listOf(user.id)
+                showMessageDialog = true
+            }
+        )
         return
     }
     if (selectedInvoice != null) {
@@ -61,16 +88,114 @@ fun AdminPanelScreen(navController: NavController) {
             }
         }
         when (selectedTab) {
-            0 -> NotificationsContent(userViewModel, notifications, { selectedMemberId = it }, { selectedTab = 2 })
+            0 -> NotificationsContent(
+                vm = userViewModel,
+                notifications = notifications,
+                onMember = { selectedMemberId = it },
+                onInvoice = { selectedTab = 2 },
+                onExpiryAlert = { notification ->
+                    messageRecipient = "Members with expiring certifications"
+                    messageSubject = "Certification Expiry Reminder"
+                    messageBody = "Dear Member,\n\nThis is a friendly reminder that your certification is about to expire. We would like to help you stay current with your qualifications.\n\nWould you like us to register you for an upcoming course at your earliest convenience?\n\nPlease contact the club office or reply to this message to arrange your re-certification.\n\nBest regards,\nKDFGC Admin Team"
+                    messageTargetUserIds = emptyList()
+                    showMessageDialog = true
+                }
+            )
             1 -> MembersContent(userViewModel) { selectedMemberId = it }
             2 -> InvoicesContent(userViewModel) { selectedInvoice = it }
             3 -> CoursesContent()
         }
     }
+
+    // Message Dialog
+    if (showMessageDialog) {
+        AlertDialog(
+            onDismissRequest = { showMessageDialog = false },
+            containerColor = Color(0xFF252525),
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Send Message", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column {
+                    Text("To: $messageRecipient", color = Color(0xFF90EE90), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = messageSubject,
+                        onValueChange = { messageSubject = it },
+                        label = { Text("Subject") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF2196F3),
+                            unfocusedBorderColor = Color(0xFF444444),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = messageBody,
+                        onValueChange = { messageBody = it },
+                        label = { Text("Message") },
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF2196F3),
+                            unfocusedBorderColor = Color(0xFF444444),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        maxLines = 10
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        userViewModel.sendAdminMessage(
+                            subject = messageSubject,
+                            body = messageBody,
+                            targetUserIds = messageTargetUserIds
+                        )
+                        showMessageDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("SEND", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showMessageDialog = false },
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("CANCEL", color = Color(0xFF888888))
+                }
+            }
+        )
+    }
 }
 
 @Composable
-private fun NotificationsContent(vm: UserViewModel, notifications: List<AdminNotification>, onMember: (Int) -> Unit, onInvoice: () -> Unit) {
+private fun NotificationsContent(
+    vm: UserViewModel,
+    notifications: List<AdminNotification>,
+    onMember: (Int) -> Unit,
+    onInvoice: () -> Unit,
+    onExpiryAlert: (AdminNotification) -> Unit
+) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("RECENT NOTIFICATIONS", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -81,19 +206,29 @@ private fun NotificationsContent(vm: UserViewModel, notifications: List<AdminNot
             EmptyBox("📭", "No Notifications", "You're all caught up!")
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(notifications) { n -> NotificationItem(n, vm, onMember, onInvoice) }
+                items(notifications) { n -> NotificationItem(n, vm, onMember, onInvoice, onExpiryAlert) }
             }
         }
     }
 }
 
 @Composable
-private fun NotificationItem(n: AdminNotification, vm: UserViewModel, onMember: (Int) -> Unit, onInvoice: () -> Unit) {
+private fun NotificationItem(
+    n: AdminNotification,
+    vm: UserViewModel,
+    onMember: (Int) -> Unit,
+    onInvoice: () -> Unit,
+    onExpiryAlert: (AdminNotification) -> Unit
+) {
     val icon = when (n.type) { "document" -> Icons.Default.Description; "purchase" -> Icons.Default.ShoppingCart; "member" -> Icons.Default.PersonAdd; "alert" -> Icons.Default.Warning; "chargeback" -> Icons.Default.CreditCard; else -> Icons.Default.Notifications }
     val iconColor = when (n.type) { "document" -> Color(0xFF2196F3); "purchase" -> Color(0xFF4CAF50); "member" -> Color(0xFF9C27B0); "alert" -> Color(0xFFFF9800); "chargeback" -> Color(0xFFF44336); else -> Color(0xFF888888) }
     Card(modifier = Modifier.fillMaxWidth().clickable {
         vm.markNotificationAsRead(n.id)
-        when { n.relatedUserId != null && (n.type == "member" || n.type == "document") -> onMember(n.relatedUserId); n.type == "purchase" || n.type == "chargeback" -> onInvoice() }
+        when {
+            n.type == "alert" -> onExpiryAlert(n)
+            n.relatedUserId != null && (n.type == "member" || n.type == "document") -> onMember(n.relatedUserId)
+            n.type == "purchase" || n.type == "chargeback" -> onInvoice()
+        }
     }, shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = if (n.isRead) Color(0xFF252525) else Color(0xFF2A2A2A))) {
         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(40.dp).background(iconColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
@@ -208,51 +343,61 @@ private fun CoursesContent() {
 }
 
 @Composable
-private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: () -> Unit) {
+private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: () -> Unit, onMessage: (User) -> Unit) {
     var member by remember { mutableStateOf<User?>(null) }
     LaunchedEffect(userId) { member = userViewModel.getUserById(userId) }
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A)).padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White) }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
             Text("Member Details", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(modifier = Modifier.height(24.dp))
-        if (member == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFF90EE90)) }
-        } else {
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(60.dp).background(Color(0xFF007236), RoundedCornerShape(30.dp)), contentAlignment = Alignment.Center) {
-                            Text(member!!.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+
+        Column(modifier = Modifier.padding(16.dp)) {
+            if (member == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF90EE90))
+                }
+            } else {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(60.dp).background(Color(0xFF007236), RoundedCornerShape(30.dp)), contentAlignment = Alignment.Center) {
+                                Text(member!!.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(member!!.fullName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text("Member #${member!!.memberNumber}", color = Color(0xFF90EE90), fontSize = 14.sp)
+                            }
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(member!!.fullName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            Text("Member #${member!!.memberNumber}", color = Color(0xFF90EE90), fontSize = 14.sp)
-                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                        HorizontalDivider(color = Color(0xFF444444))
+                        Spacer(modifier = Modifier.height(20.dp))
+                        AdminInfoRow("Email", member!!.email)
+                        AdminInfoRow("Phone", member!!.phone.ifEmpty { "Not provided" })
+                        AdminInfoRow("Member Type", member!!.membershipType)
+                        AdminInfoRow("PAL Number", member!!.palNumber.ifEmpty { "Not provided" })
+                        AdminInfoRow("Admin", if (member!!.isAdmin) "Yes" else "No")
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HorizontalDivider(color = Color(0xFF444444))
-                    Spacer(modifier = Modifier.height(20.dp))
-                    AdminInfoRow("Email", member!!.email)
-                    AdminInfoRow("Phone", member!!.phone.ifEmpty { "Not provided" })
-                    AdminInfoRow("Member Type", member!!.membershipType)
-                    AdminInfoRow("PAL Number", member!!.palNumber.ifEmpty { "Not provided" })
-                    AdminInfoRow("Admin", if (member!!.isAdmin) "Yes" else "No")
                 }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) {
-                    Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("MESSAGE")
-                }
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("EDIT")
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { member?.let { onMessage(it) } }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) {
+                        Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("MESSAGE")
+                    }
+                    Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("EDIT")
+                    }
                 }
             }
         }
@@ -261,46 +406,53 @@ private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: 
 
 @Composable
 private fun InvoiceDetailView(invoice: Invoice, userViewModel: UserViewModel, onBack: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A)).padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White) }
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
             Text("Invoice Details", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(modifier = Modifier.height(24.dp))
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = if (invoice.isFlagged) Color(0xFF3A2525) else Color(0xFF252525))) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Invoice #${invoice.id}", color = Color(0xFF90EE90), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    Text(invoice.paymentStatus, color = Color.White, fontSize = 14.sp)
-                }
-                Spacer(modifier = Modifier.height(20.dp))
-                HorizontalDivider(color = Color(0xFF444444))
-                Spacer(modifier = Modifier.height(20.dp))
-                AdminInfoRow("Item", invoice.itemName)
-                AdminInfoRow("Customer", invoice.userName)
-                AdminInfoRow("Quantity", invoice.quantity.toString())
-                AdminInfoRow("Price", invoice.price)
-                AdminInfoRow("Transaction ID", invoice.transactionId)
-                AdminInfoRow("Date", dateFormat(invoice.purchaseDate))
-                AdminInfoRow("Payment Method", invoice.paymentMethod)
-                if (invoice.isFlagged) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Flag, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Flagged: ${invoice.flagReason}", color = Color(0xFFFF6B6B), fontSize = 13.sp)
+
+        Column(modifier = Modifier.padding(16.dp)) {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = if (invoice.isFlagged) Color(0xFF3A2525) else Color(0xFF252525))) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Invoice #${invoice.id}", color = Color(0xFF90EE90), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(invoice.paymentStatus, color = Color.White, fontSize = 14.sp)
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                    HorizontalDivider(color = Color(0xFF444444))
+                    Spacer(modifier = Modifier.height(20.dp))
+                    AdminInfoRow("Item", invoice.itemName)
+                    AdminInfoRow("Customer", invoice.userName)
+                    AdminInfoRow("Quantity", invoice.quantity.toString())
+                    AdminInfoRow("Price", invoice.price)
+                    AdminInfoRow("Transaction ID", invoice.transactionId)
+                    AdminInfoRow("Date", dateFormat(invoice.purchaseDate))
+                    AdminInfoRow("Payment Method", invoice.paymentMethod)
+                    if (invoice.isFlagged) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Flag, contentDescription = null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Flagged: ${invoice.flagReason}", color = Color(0xFFFF6B6B), fontSize = 13.sp)
+                        }
                     }
                 }
             }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (invoice.isFlagged) {
-                Button(onClick = { userViewModel.unflagInvoice(invoice.id); onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("UNFLAG") }
-            } else {
-                Button(onClick = { userViewModel.flagInvoice(invoice.id, "Review needed"); onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B6B)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("FLAG") }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (invoice.isFlagged) {
+                    Button(onClick = { userViewModel.unflagInvoice(invoice.id); onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("UNFLAG") }
+                } else {
+                    Button(onClick = { userViewModel.flagInvoice(invoice.id, "Review needed"); onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B6B)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("FLAG") }
+                }
+                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("REFUND") }
             }
-            Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) { Text("REFUND") }
         }
     }
 }
