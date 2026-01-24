@@ -47,6 +47,20 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             if (existingNotifications.isEmpty()) { addSampleNotifications() }
             val existingCourses = courseDao.getAllCourses().first()
             if (existingCourses.isEmpty()) { addSampleCourses() }
+            val existingInvoices = invoiceDao.getAllInvoices().first()
+            if (existingInvoices.isEmpty()) { addSampleInvoices() }
+        }
+    }
+
+    private suspend fun addSampleInvoices() {
+        val members = userDao.getAllMembersList()
+        if (members.isNotEmpty()) {
+            listOf(
+                Invoice(userId = members[0].id, userName = members[0].fullName, itemName = "Annual Membership", price = "$250.00", quantity = 1, paymentStatus = "Paid", paymentMethod = "Credit Card", transactionId = "TXN${System.currentTimeMillis()}", notes = "2026 Annual Membership"),
+                Invoice(userId = members[0].id, userName = members[0].fullName, itemName = "10-Visit Range Pass", price = "$75.00", quantity = 1, paymentStatus = "Paid", paymentMethod = "Credit Card", transactionId = "TXN${System.currentTimeMillis() + 1}", notes = ""),
+                Invoice(userId = members.getOrElse(1) { members[0] }.id, userName = members.getOrElse(1) { members[0] }.fullName, itemName = "PAL Course Registration", price = "$150.00", quantity = 1, paymentStatus = "Pending", paymentMethod = "Pending", transactionId = "N/A", notes = "Awaiting payment"),
+                Invoice(userId = members.getOrElse(2) { members[0] }.id, userName = members.getOrElse(2) { members[0] }.fullName, itemName = "Guest Pass", price = "$25.00", quantity = 2, paymentStatus = "Paid", paymentMethod = "E-Transfer", transactionId = "TXN${System.currentTimeMillis() + 2}", notes = "2 guest passes")
+            ).forEach { invoiceDao.insertInvoice(it) }
         }
     }
 
@@ -172,4 +186,111 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun cancelCourseRegistration(courseId: Int) { viewModelScope.launch { courseDao.cancelSeat(courseId) } }
 
     suspend fun getCourseById(courseId: Int): Course? = courseDao.getCourseById(courseId)
+
+    // ==================== INVOICE MANAGEMENT ====================
+
+    fun createCustomInvoice(userId: Int, userName: String, itemName: String, price: String, quantity: Int = 1, message: String = "") {
+        viewModelScope.launch {
+            val invoice = Invoice(
+                userId = userId,
+                userName = userName,
+                itemName = itemName,
+                price = price,
+                quantity = quantity,
+                paymentStatus = "Pending",
+                paymentMethod = "Pending",
+                transactionId = "INV-${System.currentTimeMillis()}",
+                notes = message
+            )
+            invoiceDao.insertInvoice(invoice)
+            // Notify the member
+            notificationDao.insertNotification(AdminNotification(
+                type = "invoice",
+                title = "New Invoice: $itemName",
+                message = "Amount: $price. $message",
+                relatedUserId = userId,
+                isAdminNotification = false
+            ))
+            // Notify admin
+            notificationDao.insertNotification(AdminNotification(
+                type = "invoice",
+                title = "Invoice Created",
+                message = "Invoice for $itemName ($price) sent to $userName",
+                relatedUserId = userId,
+                isAdminNotification = true
+            ))
+        }
+    }
+
+    fun processRefund(invoice: Invoice, refundReason: String) {
+        viewModelScope.launch {
+            invoiceDao.updatePaymentStatus(invoice.id, "Refunded")
+            invoiceDao.updateInvoiceNotes(invoice.id, invoice.notes + "\nRefund reason: $refundReason")
+            // Notify member of refund
+            notificationDao.insertNotification(AdminNotification(
+                type = "refund",
+                title = "Refund Processed",
+                message = "Your payment of ${invoice.price} for ${invoice.itemName} has been refunded. Reason: $refundReason",
+                relatedUserId = invoice.userId,
+                isAdminNotification = false
+            ))
+            // Notify admin
+            notificationDao.insertNotification(AdminNotification(
+                type = "refund",
+                title = "Refund Issued",
+                message = "Refund of ${invoice.price} issued to ${invoice.userName} for ${invoice.itemName}",
+                relatedUserId = invoice.userId,
+                isAdminNotification = true
+            ))
+        }
+    }
+
+    fun getMemberInvoices(userId: Int): Flow<List<Invoice>> = invoiceDao.getInvoicesForUser(userId)
+
+    fun getMemberNotifications(userId: Int): Flow<List<AdminNotification>> = notificationDao.getMemberNotifications(userId)
+
+    fun exportAllInvoices(invoices: List<Invoice>): String {
+        var exportText = "KDFGC INVOICE EXPORT\n"
+        exportText += "Generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}\n"
+        exportText += "================================\n\n"
+        invoices.forEach { inv ->
+            exportText += "Invoice #${inv.id}\n"
+            exportText += "Customer: ${inv.userName}\n"
+            exportText += "Item: ${inv.itemName}\n"
+            exportText += "Quantity: ${inv.quantity}\n"
+            exportText += "Price: ${inv.price}\n"
+            exportText += "Status: ${inv.paymentStatus}\n"
+            exportText += "Transaction ID: ${inv.transactionId}\n"
+            exportText += "Notes: ${inv.notes}\n"
+            exportText += "--------------------------------\n\n"
+        }
+        return exportText
+    }
+
+    fun updateInvoice(invoice: Invoice) {
+        viewModelScope.launch { invoiceDao.updateInvoice(invoice) }
+    }
+
+    fun deleteInvoice(invoice: Invoice) {
+        viewModelScope.launch { invoiceDao.deleteInvoice(invoice) }
+    }
+
+    fun sendInvoiceReminder(invoice: Invoice) {
+        viewModelScope.launch {
+            notificationDao.insertNotification(AdminNotification(
+                type = "invoice",
+                title = "Payment Reminder",
+                message = "Reminder: Your invoice for ${invoice.itemName} (${invoice.price}) is pending payment.",
+                relatedUserId = invoice.userId,
+                isAdminNotification = false
+            ))
+            notificationDao.insertNotification(AdminNotification(
+                type = "alert",
+                title = "Payment Reminder Sent",
+                message = "Payment reminder sent to ${invoice.userName} for Invoice #${invoice.id}",
+                relatedUserId = invoice.userId,
+                isAdminNotification = true
+            ))
+        }
+    }
 }

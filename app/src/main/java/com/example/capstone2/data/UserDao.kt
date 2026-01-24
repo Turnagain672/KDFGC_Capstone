@@ -20,6 +20,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE isAdmin = 0")
     fun getAllMembers(): Flow<List<User>>
 
+    @Query("SELECT * FROM users WHERE isAdmin = 0")
+    suspend fun getAllMembersList(): List<User>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: User): Long
 

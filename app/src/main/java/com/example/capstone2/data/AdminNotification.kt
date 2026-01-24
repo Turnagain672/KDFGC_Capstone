@@ -17,5 +17,6 @@ data class AdminNotification(
     val relatedPurchaseId: Int? = null,
     val relatedDocumentId: Int? = null,
     val actionRequired: Boolean = false,
-    val actionType: String? = null
+    val actionType: String? = null,
+    val isAdminNotification: Boolean = true
 )

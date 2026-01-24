@@ -1,5 +1,9 @@
 package com.example.capstone2.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -79,7 +84,7 @@ fun AdminPanelScreen(navController: NavController) {
         return
     }
     if (selectedInvoice != null) {
-        InvoiceDetailView(invoice = selectedInvoice!!, userViewModel = userViewModel, onBack = { selectedInvoice = null })
+        InvoiceDetailView(invoice = selectedInvoice!!, userViewModel = userViewModel, onBack = { selectedInvoice = null }, onRefresh = { selectedInvoice = null })
         return
     }
 
@@ -128,9 +133,9 @@ private fun NotificationsContent(vm: UserViewModel, notifications: List<AdminNot
 
 @Composable
 private fun NotificationItem(n: AdminNotification, vm: UserViewModel, onMember: (Int) -> Unit, onInvoice: () -> Unit, onExpiryAlert: () -> Unit) {
-    val icon = when (n.type) { "document" -> Icons.Default.Description; "purchase" -> Icons.Default.ShoppingCart; "member" -> Icons.Default.PersonAdd; "alert" -> Icons.Default.Warning; else -> Icons.Default.Notifications }
-    val iconColor = when (n.type) { "document" -> Color(0xFF2196F3); "purchase" -> Color(0xFF4CAF50); "member" -> Color(0xFF9C27B0); "alert" -> Color(0xFFFF9800); else -> Color(0xFF888888) }
-    Card(modifier = Modifier.fillMaxWidth().clickable { vm.markNotificationAsRead(n.id); when { n.type == "alert" && n.title.contains("Expiry") -> onExpiryAlert(); n.relatedUserId != null -> onMember(n.relatedUserId); else -> onInvoice() } }, colors = CardDefaults.cardColors(containerColor = if (n.isRead) Color(0xFF252525) else Color(0xFF2A2A2A))) {
+    val icon = when (n.type) { "document" -> Icons.Default.Description; "purchase" -> Icons.Default.ShoppingCart; "member" -> Icons.Default.PersonAdd; "alert" -> Icons.Default.Warning; "invoice" -> Icons.Default.Receipt; "refund" -> Icons.Default.Refresh; else -> Icons.Default.Notifications }
+    val iconColor = when (n.type) { "document" -> Color(0xFF2196F3); "purchase" -> Color(0xFF4CAF50); "member" -> Color(0xFF9C27B0); "alert" -> Color(0xFFFF9800); "invoice" -> Color(0xFF00BCD4); "refund" -> Color(0xFFE91E63); else -> Color(0xFF888888) }
+    Card(modifier = Modifier.fillMaxWidth().clickable { vm.markNotificationAsRead(n.id); when { n.type == "alert" && n.title.contains("Expiry") -> onExpiryAlert(); n.type == "invoice" || n.type == "refund" -> onInvoice(); n.relatedUserId != null -> onMember(n.relatedUserId); else -> onInvoice() } }, colors = CardDefaults.cardColors(containerColor = if (n.isRead) Color(0xFF252525) else Color(0xFF2A2A2A))) {
         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(40.dp).background(iconColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp)) }
             Spacer(modifier = Modifier.width(12.dp))
@@ -174,23 +179,137 @@ private fun MemberItem(m: User, onClick: () -> Unit) {
 
 @Composable
 private fun InvoicesContent(vm: UserViewModel, onInvoice: (Invoice) -> Unit) {
+    val context = LocalContext.current
     val invoices by vm.allInvoices.collectAsState(initial = emptyList())
     var flaggedOnly by remember { mutableStateOf(false) }
     val flagged by vm.flaggedInvoices.collectAsState(initial = emptyList())
     val list = if (flaggedOnly) flagged else invoices
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
+    val allMembers by vm.searchResults.collectAsState()
+
+    LaunchedEffect(Unit) { vm.getAllMembers() }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("INVOICES", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold); Row(verticalAlignment = Alignment.CenterVertically) { Text("Flagged Only", color = Color(0xFF888888), fontSize = 12.sp); Switch(checked = flaggedOnly, onCheckedChange = { flaggedOnly = it }) } }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("INVOICES", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = { showExportDialog = true }) { Icon(Icons.Default.Download, null, tint = Color(0xFF90EE90)) }
+                Button(onClick = { showCreateDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("NEW", fontSize = 12.sp) }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) { Text("Flagged Only", color = Color(0xFF888888), fontSize = 12.sp); Spacer(modifier = Modifier.width(8.dp)); Switch(checked = flaggedOnly, onCheckedChange = { flaggedOnly = it }) }
         Spacer(modifier = Modifier.height(12.dp))
         if (list.isEmpty()) { EmptyBox("🧾", "No Invoices", "No invoices yet") }
         else { LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(list) { i -> InvoiceItem(i) { onInvoice(i) } } } }
+    }
+
+    if (showCreateDialog) {
+        CreateInvoiceDialog(vm = vm, members = allMembers.filter { !it.isAdmin }, onDismiss = { showCreateDialog = false })
+    }
+
+    if (showExportDialog) {
+        val exportText = vm.exportAllInvoices(invoices)
+        AlertDialog(onDismissRequest = { showExportDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Export Invoices", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("${invoices.size} invoices ready to export", color = Color(0xFF90EE90), fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) {
+                        Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
+                            Text(exportText, color = Color(0xFF888888), fontSize = 11.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Invoices", exportText))
+                    Toast.makeText(context, "Invoices copied to clipboard!", Toast.LENGTH_SHORT).show()
+                    showExportDialog = false
+                }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("COPY") }
+            },
+            dismissButton = { OutlinedButton(onClick = { showExportDialog = false }) { Text("CLOSE", color = Color(0xFF888888)) } })
+    }
+}
+
+@Composable
+private fun CreateInvoiceDialog(vm: UserViewModel, members: List<User>, onDismiss: () -> Unit) {
+    var selectedMember by remember { mutableStateOf<User?>(null) }
+    var itemName by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
+    var quantity by remember { mutableStateOf("1") }
+    var message by remember { mutableStateOf("") }
+    var showMemberPicker by remember { mutableStateOf(false) }
+
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Color(0xFF252525),
+        title = { Text("Create Custom Invoice", color = Color.White, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("Send invoice to member", color = Color(0xFF90EE90), fontSize = 13.sp)
+                Spacer(modifier = Modifier.height(16.dp))
+                Card(modifier = Modifier.fillMaxWidth().clickable { showMemberPicker = true }, colors = CardDefaults.cardColors(containerColor = Color(0xFF333333))) {
+                    Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Person, null, tint = Color(0xFF888888))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(selectedMember?.fullName ?: "Select Member", color = if (selectedMember != null) Color.White else Color(0xFF888888), modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.ArrowDropDown, null, tint = Color(0xFF888888))
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(value = itemName, onValueChange = { itemName = it }, label = { Text("Item/Service Name") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Price") }, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text("Qty") }, modifier = Modifier.weight(0.5f), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Message (optional)") }, modifier = Modifier.fillMaxWidth().height(100.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                selectedMember?.let { member ->
+                    vm.createCustomInvoice(member.id, member.fullName, itemName, if (price.startsWith("$")) price else "$$price", quantity.toIntOrNull() ?: 1, message)
+                    onDismiss()
+                }
+            }, enabled = selectedMember != null && itemName.isNotBlank() && price.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Icon(Icons.Default.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("SEND INVOICE") }
+        },
+        dismissButton = { OutlinedButton(onClick = onDismiss) { Text("CANCEL", color = Color(0xFF888888)) } })
+
+    if (showMemberPicker) {
+        AlertDialog(onDismissRequest = { showMemberPicker = false }, containerColor = Color(0xFF252525),
+            title = { Text("Select Member", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                LazyColumn(modifier = Modifier.height(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(members) { m ->
+                        Card(modifier = Modifier.fillMaxWidth().clickable { selectedMember = m; showMemberPicker = false }, colors = CardDefaults.cardColors(containerColor = Color(0xFF333333))) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(36.dp).background(Color(0xFF007236), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) { Text(m.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column { Text(m.fullName, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp); Text(m.email, color = Color(0xFF888888), fontSize = 11.sp) }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { },
+            dismissButton = { OutlinedButton(onClick = { showMemberPicker = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
     }
 }
 
 @Composable
 private fun InvoiceItem(i: Invoice, onClick: () -> Unit) {
+    val statusColor = when (i.paymentStatus) { "Paid" -> Color(0xFF4CAF50); "Pending" -> Color(0xFFFF9800); "Refunded" -> Color(0xFF9C27B0); else -> Color(0xFF888888) }
     Card(modifier = Modifier.fillMaxWidth().clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = if (i.isFlagged) Color(0xFF3A2525) else Color(0xFF252525))) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Column { Text(i.itemName, color = Color.White, fontWeight = FontWeight.SemiBold); Text(i.userName, color = Color(0xFF888888), fontSize = 12.sp) }; Text(i.price, color = Color(0xFF90EE90), fontWeight = FontWeight.Bold) }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) { Text(i.itemName, color = Color.White, fontWeight = FontWeight.SemiBold); Text(i.userName, color = Color(0xFF888888), fontSize = 12.sp) }
+                Column(horizontalAlignment = Alignment.End) { Text(i.price, color = Color(0xFF90EE90), fontWeight = FontWeight.Bold); Text(i.paymentStatus, color = statusColor, fontSize = 11.sp) }
+            }
             if (i.isFlagged) { Spacer(modifier = Modifier.height(8.dp)); Text("⚠ ${i.flagReason}", color = Color(0xFFFF6B6B), fontSize = 11.sp) }
         }
     }
@@ -292,7 +411,7 @@ private fun CoursesContent(vm: UserViewModel) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = courseInstructor, onValueChange = { courseInstructor = it }, label = { Text("Instructor Name") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = courseEmail, onValueChange = { courseEmail = it }, label = { Text("Instructor Email") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    OutlinedTextField(value = courseEmail, onValueChange = { courseEmail = it }, label = { Text("Instructor Email") }, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = courseLocation, onValueChange = { courseLocation = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                 }
@@ -321,7 +440,6 @@ private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: 
     var messageBody by remember { mutableStateOf("") }
     var editPhone by remember { mutableStateOf("") }
     var editPalNumber by remember { mutableStateOf("") }
-
     LaunchedEffect(userId) { member = userViewModel.getUserById(userId) }
     LaunchedEffect(member) { member?.let { editPhone = it.phone; editPalNumber = it.palNumber } }
 
@@ -377,24 +495,90 @@ private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: 
 }
 
 @Composable
-private fun InvoiceDetailView(invoice: Invoice, userViewModel: UserViewModel, onBack: () -> Unit) {
+private fun InvoiceDetailView(invoice: Invoice, userViewModel: UserViewModel, onBack: () -> Unit, onRefresh: () -> Unit) {
+    var showRefundDialog by remember { mutableStateOf(false) }
+    var showReminderDialog by remember { mutableStateOf(false) }
+    var showFlagDialog by remember { mutableStateOf(false) }
+    var refundReason by remember { mutableStateOf("") }
+    var flagReason by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A))) {
         Row(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }; Text("Invoice Details", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = if (invoice.isFlagged) Color(0xFF3A2525) else Color(0xFF252525))) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Invoice #${invoice.id}", color = Color(0xFF90EE90), fontWeight = FontWeight.Bold); Text(invoice.paymentStatus, color = Color.White) }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Invoice #${invoice.id}", color = Color(0xFF90EE90), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        val statusColor = when (invoice.paymentStatus) { "Paid" -> Color(0xFF4CAF50); "Pending" -> Color(0xFFFF9800); "Refunded" -> Color(0xFF9C27B0); else -> Color(0xFF888888) }
+                        Card(colors = CardDefaults.cardColors(containerColor = statusColor.copy(alpha = 0.2f))) { Text(invoice.paymentStatus, color = statusColor, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                    }
                     Spacer(modifier = Modifier.height(20.dp)); HorizontalDivider(color = Color(0xFF444444)); Spacer(modifier = Modifier.height(20.dp))
-                    AdminInfoRow("Item", invoice.itemName); AdminInfoRow("Customer", invoice.userName); AdminInfoRow("Quantity", invoice.quantity.toString()); AdminInfoRow("Price", invoice.price); AdminInfoRow("Transaction ID", invoice.transactionId); AdminInfoRow("Payment Method", invoice.paymentMethod)
-                    if (invoice.isFlagged) { Spacer(modifier = Modifier.height(16.dp)); Text("⚠ Flagged: ${invoice.flagReason}", color = Color(0xFFFF6B6B)) }
+                    AdminInfoRow("Item", invoice.itemName)
+                    AdminInfoRow("Customer", invoice.userName)
+                    AdminInfoRow("Quantity", invoice.quantity.toString())
+                    AdminInfoRow("Price", invoice.price)
+                    AdminInfoRow("Transaction ID", invoice.transactionId)
+                    AdminInfoRow("Payment Method", invoice.paymentMethod)
+                    AdminInfoRow("Date", java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(invoice.purchaseDate)))
+                    if (invoice.notes.isNotBlank()) { Spacer(modifier = Modifier.height(12.dp)); Text("Notes:", color = Color(0xFF888888), fontSize = 12.sp); Text(invoice.notes, color = Color.White, fontSize = 14.sp) }
+                    if (invoice.isFlagged) { Spacer(modifier = Modifier.height(16.dp)); Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF4A2020))) { Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Warning, null, tint = Color(0xFFFF6B6B), modifier = Modifier.size(20.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("Flagged: ${invoice.flagReason}", color = Color(0xFFFF6B6B), fontSize = 13.sp) } } }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+            Text("ACTIONS", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (invoice.isFlagged) { Button(onClick = { userViewModel.unflagInvoice(invoice.id); onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), modifier = Modifier.weight(1f)) { Text("UNFLAG") } }
-                else { Button(onClick = { userViewModel.flagInvoice(invoice.id, "Review needed"); onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6B6B)), modifier = Modifier.weight(1f)) { Text("FLAG") } }
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f)) { Text("REFUND") }
+                if (invoice.isFlagged) { Button(onClick = { userViewModel.unflagInvoice(invoice.id); Toast.makeText(context, "Invoice unflagged", Toast.LENGTH_SHORT).show(); onRefresh() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), modifier = Modifier.weight(1f)) { Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("UNFLAG") } }
+                else { Button(onClick = { showFlagDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800)), modifier = Modifier.weight(1f)) { Icon(Icons.Default.Flag, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("FLAG") } }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (invoice.paymentStatus == "Pending") { Button(onClick = { showReminderDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f)) { Icon(Icons.Default.Notifications, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("REMIND") } }
+                if (invoice.paymentStatus == "Paid") { Button(onClick = { showRefundDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63)), modifier = Modifier.weight(1f)) { Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("REFUND") } }
+            }
+            if (invoice.paymentStatus == "Pending") {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { userViewModel.updateInvoiceStatus(invoice.id, "Paid"); Toast.makeText(context, "Marked as paid", Toast.LENGTH_SHORT).show(); onRefresh() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("MARK AS PAID") }
             }
         }
+    }
+
+    if (showRefundDialog) {
+        AlertDialog(onDismissRequest = { showRefundDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Process Refund", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Refund ${invoice.price} to ${invoice.userName}?", color = Color(0xFFAAAAAA))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(value = refundReason, onValueChange = { refundReason = it }, label = { Text("Refund Reason") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE91E63), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("This will notify the member and update the invoice status.", color = Color(0xFF888888), fontSize = 12.sp)
+                }
+            },
+            confirmButton = { Button(onClick = { userViewModel.processRefund(invoice, refundReason); Toast.makeText(context, "Refund processed", Toast.LENGTH_SHORT).show(); showRefundDialog = false; onRefresh() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))) { Text("PROCESS REFUND") } },
+            dismissButton = { OutlinedButton(onClick = { showRefundDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+
+    if (showReminderDialog) {
+        AlertDialog(onDismissRequest = { showReminderDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Send Payment Reminder", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("Send a payment reminder to ${invoice.userName} for ${invoice.itemName} (${invoice.price})?", color = Color(0xFFAAAAAA)) },
+            confirmButton = { Button(onClick = { userViewModel.sendInvoiceReminder(invoice); Toast.makeText(context, "Reminder sent", Toast.LENGTH_SHORT).show(); showReminderDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))) { Text("SEND REMINDER") } },
+            dismissButton = { OutlinedButton(onClick = { showReminderDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+
+    if (showFlagDialog) {
+        AlertDialog(onDismissRequest = { showFlagDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Flag Invoice", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Flag this invoice for review?", color = Color(0xFFAAAAAA))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(value = flagReason, onValueChange = { flagReason = it }, label = { Text("Reason") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFFF9800), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                }
+            },
+            confirmButton = { Button(onClick = { userViewModel.flagInvoice(invoice.id, flagReason.ifBlank { "Review needed" }); Toast.makeText(context, "Invoice flagged", Toast.LENGTH_SHORT).show(); showFlagDialog = false; onRefresh() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))) { Text("FLAG") } },
+            dismissButton = { OutlinedButton(onClick = { showFlagDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
     }
 }

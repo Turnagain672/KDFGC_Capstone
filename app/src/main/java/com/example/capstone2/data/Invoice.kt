@@ -26,16 +26,16 @@ data class Invoice(
     val price: String = "",
 
     @ColumnInfo(name = "quantity")
-    val quantity: Int = 0,
+    val quantity: Int = 1,
 
     @ColumnInfo(name = "purchaseDate")
     val purchaseDate: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "paymentMethod")
-    val paymentMethod: String = "Card",
+    val paymentMethod: String = "Pending",
 
     @ColumnInfo(name = "paymentStatus")
-    val paymentStatus: String = "Paid",
+    val paymentStatus: String = "Pending",
 
     @ColumnInfo(name = "transactionId")
     val transactionId: String = "",
@@ -47,5 +47,8 @@ data class Invoice(
     val isFlagged: Boolean = false,
 
     @ColumnInfo(name = "flagReason")
-    val flagReason: String = ""
+    val flagReason: String = "",
+
+    @ColumnInfo(name = "createdAt")
+    val createdAt: Long = System.currentTimeMillis()
 )
