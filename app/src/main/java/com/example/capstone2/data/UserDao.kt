@@ -23,11 +23,35 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE isAdmin = 0")
     suspend fun getAllMembersList(): List<User>
 
+    @Query("SELECT * FROM users ORDER BY fullName ASC")
+    fun getAllUsers(): Flow<List<User>>
+
+    @Query("SELECT * FROM users WHERE role = :role")
+    fun getUsersByRole(role: String): Flow<List<User>>
+
+    @Query("SELECT * FROM users WHERE role = 'moderator'")
+    fun getModerators(): Flow<List<User>>
+
+    @Query("SELECT * FROM users WHERE isAdmin = 1 OR role = 'admin'")
+    fun getAdmins(): Flow<List<User>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: User): Long
 
     @Update
     suspend fun updateUser(user: User)
+
+    @Delete
+    suspend fun deleteUser(user: User)
+
+    @Query("DELETE FROM users WHERE id = :userId")
+    suspend fun deleteUserById(userId: Int)
+
+    @Query("UPDATE users SET role = :role WHERE id = :userId")
+    suspend fun updateUserRole(userId: Int, role: String)
+
+    @Query("UPDATE users SET isAdmin = :isAdmin, role = :role WHERE id = :userId")
+    suspend fun setAdminStatus(userId: Int, isAdmin: Boolean, role: String)
 
     @Query("UPDATE users SET membershipType = :status WHERE id = :userId")
     suspend fun updateMembershipType(userId: Int, status: String)

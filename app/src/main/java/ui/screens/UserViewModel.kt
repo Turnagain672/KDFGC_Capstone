@@ -14,6 +14,8 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val notificationDao = db.adminNotificationDao()
     private val invoiceDao = db.invoiceDao()
     private val courseDao = db.courseDao()
+    private val newsDao = db.newsDao()
+    private val forumDao = db.forumDao()
 
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
@@ -33,15 +35,25 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     val activeCourses: Flow<List<Course>> = courseDao.getActiveCourses()
     val upcomingCourses: Flow<List<Course>> = courseDao.getUpcomingCoursesWithSeats()
 
+    val allNews: Flow<List<News>> = newsDao.getAllNews()
+    val featuredNews: Flow<List<News>> = newsDao.getFeaturedNews()
+    val publishedNews: Flow<List<News>> = newsDao.getPublishedNews()
+
+    val allUsers: Flow<List<User>> = userDao.getAllUsers()
+    val moderators: Flow<List<User>> = userDao.getModerators()
+    val admins: Flow<List<User>> = userDao.getAdmins()
+
+    val allForumPosts: Flow<List<ForumPost>> = forumDao.getAllPosts()
+
     init {
         viewModelScope.launch {
             val admin = userDao.getUserByEmail("admin@kdfgc.org")
             if (admin == null) {
-                userDao.insertUser(User(email = "admin@kdfgc.org", password = "admin123", fullName = "KDFGC Admin", memberNumber = "ADMIN001", isAdmin = true))
+                userDao.insertUser(User(email = "admin@kdfgc.org", password = "admin123", fullName = "KDFGC Admin", memberNumber = "ADMIN001", isAdmin = true, role = "admin"))
             }
             val member = userDao.getUserByEmail("member@kdfgc.org")
             if (member == null) {
-                userDao.insertUser(User(email = "member@kdfgc.org", password = "member123", fullName = "Demo Member", memberNumber = "MEM001", isAdmin = false))
+                userDao.insertUser(User(email = "member@kdfgc.org", password = "member123", fullName = "Demo Member", memberNumber = "MEM001", isAdmin = false, role = "member"))
             }
             val existingNotifications = notificationDao.getActiveNotifications().first()
             if (existingNotifications.isEmpty()) { addSampleNotifications() }
@@ -49,7 +61,35 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             if (existingCourses.isEmpty()) { addSampleCourses() }
             val existingInvoices = invoiceDao.getAllInvoices().first()
             if (existingInvoices.isEmpty()) { addSampleInvoices() }
+            val existingNews = newsDao.getAllNews().first()
+            if (existingNews.isEmpty()) { addSampleNews() }
         }
+    }
+
+    private suspend fun addSampleNews() {
+        listOf(
+            News(
+                title = "Spring Shooting Season Opens!",
+                summary = "The outdoor ranges are now open for the spring season. Check the schedule for availability.",
+                content = "We're excited to announce that all outdoor ranges are now open for the spring shooting season!\n\nRange Hours:\n- Weekdays: 9 AM - 8 PM\n- Weekends: 8 AM - 6 PM\n\nPlease remember to follow all safety protocols and sign in at the clubhouse before using any range.\n\nSee you at the range!",
+                authorName = "KDFGC Admin",
+                isFeatured = true
+            ),
+            News(
+                title = "New PAL Course Dates Available",
+                summary = "Register now for upcoming PAL and RPAL courses in February and March.",
+                content = "New course dates have been added for the Canadian Firearms Safety Course (CFSC) and Canadian Restricted Firearms Safety Course (CRFSC).\n\nUpcoming Dates:\n- Feb 15: CFSC (PAL)\n- Feb 22: CRFSC (RPAL)\n- Mar 8: CFSC (PAL)\n- Mar 15: CRFSC (RPAL)\n\nRegister through the app or contact the clubhouse. Space is limited!",
+                authorName = "KDFGC Admin",
+                isFeatured = true
+            ),
+            News(
+                title = "Annual General Meeting - March 20",
+                summary = "All members are invited to attend the AGM. Important club updates and board elections.",
+                content = "The Annual General Meeting will be held on March 20, 2026 at 7:00 PM in the clubhouse.\n\nAgenda:\n- Financial report\n- Range improvements update\n- Board elections\n- Member Q&A\n\nAll members in good standing are encouraged to attend and vote.",
+                authorName = "KDFGC Admin",
+                isFeatured = false
+            )
+        ).forEach { newsDao.insertNews(it) }
     }
 
     private suspend fun addSampleInvoices() {
@@ -76,11 +116,11 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun addSampleNotifications() {
         val now = System.currentTimeMillis()
         val sampleMembers = listOf(
-            User(email = "john@example.com", password = "pass123", fullName = "John Doe", memberNumber = "MEM002", isAdmin = false),
-            User(email = "jane@example.com", password = "pass123", fullName = "Jane Smith", memberNumber = "MEM003", isAdmin = false),
-            User(email = "mike@example.com", password = "pass123", fullName = "Mike Johnson", memberNumber = "MEM004", isAdmin = false),
-            User(email = "sarah@example.com", password = "pass123", fullName = "Sarah Wilson", memberNumber = "MEM005", isAdmin = false),
-            User(email = "tom@example.com", password = "pass123", fullName = "Tom Brown", memberNumber = "MEM006", isAdmin = false)
+            User(email = "john@example.com", password = "pass123", fullName = "John Doe", memberNumber = "MEM002", isAdmin = false, role = "member"),
+            User(email = "jane@example.com", password = "pass123", fullName = "Jane Smith", memberNumber = "MEM003", isAdmin = false, role = "member"),
+            User(email = "mike@example.com", password = "pass123", fullName = "Mike Johnson", memberNumber = "MEM004", isAdmin = false, role = "moderator"),
+            User(email = "sarah@example.com", password = "pass123", fullName = "Sarah Wilson", memberNumber = "MEM005", isAdmin = false, role = "member"),
+            User(email = "tom@example.com", password = "pass123", fullName = "Tom Brown", memberNumber = "MEM006", isAdmin = false, role = "member")
         )
         val userIds = mutableListOf<Int>()
         sampleMembers.forEach { user ->
@@ -101,7 +141,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun register(email: String, password: String, fullName: String, memberNumber: String): Boolean {
         val existing = userDao.getUserByEmail(email); if (existing != null) return false
-        val userId = userDao.insertUser(User(email = email, password = password, fullName = fullName, memberNumber = memberNumber, isAdmin = false))
+        val userId = userDao.insertUser(User(email = email, password = password, fullName = fullName, memberNumber = memberNumber, isAdmin = false, role = "member"))
         _currentUser.value = userDao.getUserById(userId.toInt())
         notificationDao.insertNotification(AdminNotification(type = "member", title = "New Member", message = "$fullName registered", relatedUserId = userId.toInt(), actionRequired = true, actionType = "contact_member"))
         return true
@@ -173,7 +213,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateCourse(course: Course) { viewModelScope.launch { courseDao.updateCourse(course) } }
-
     fun deleteCourse(course: Course) { viewModelScope.launch { courseDao.deleteCourse(course) } }
 
     fun registerForCourse(courseId: Int, userId: Int, userName: String, courseName: String) {
@@ -184,41 +223,16 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun cancelCourseRegistration(courseId: Int) { viewModelScope.launch { courseDao.cancelSeat(courseId) } }
-
     suspend fun getCourseById(courseId: Int): Course? = courseDao.getCourseById(courseId)
 
     // ==================== INVOICE MANAGEMENT ====================
 
     fun createCustomInvoice(userId: Int, userName: String, itemName: String, price: String, quantity: Int = 1, message: String = "") {
         viewModelScope.launch {
-            val invoice = Invoice(
-                userId = userId,
-                userName = userName,
-                itemName = itemName,
-                price = price,
-                quantity = quantity,
-                paymentStatus = "Pending",
-                paymentMethod = "Pending",
-                transactionId = "INV-${System.currentTimeMillis()}",
-                notes = message
-            )
+            val invoice = Invoice(userId = userId, userName = userName, itemName = itemName, price = price, quantity = quantity, paymentStatus = "Pending", paymentMethod = "Pending", transactionId = "INV-${System.currentTimeMillis()}", notes = message)
             invoiceDao.insertInvoice(invoice)
-            // Notify the member
-            notificationDao.insertNotification(AdminNotification(
-                type = "invoice",
-                title = "New Invoice: $itemName",
-                message = "Amount: $price. $message",
-                relatedUserId = userId,
-                isAdminNotification = false
-            ))
-            // Notify admin
-            notificationDao.insertNotification(AdminNotification(
-                type = "invoice",
-                title = "Invoice Created",
-                message = "Invoice for $itemName ($price) sent to $userName",
-                relatedUserId = userId,
-                isAdminNotification = true
-            ))
+            notificationDao.insertNotification(AdminNotification(type = "invoice", title = "New Invoice: $itemName", message = "Amount: $price. $message", relatedUserId = userId, isAdminNotification = false))
+            notificationDao.insertNotification(AdminNotification(type = "invoice", title = "Invoice Created", message = "Invoice for $itemName ($price) sent to $userName", relatedUserId = userId, isAdminNotification = true))
         }
     }
 
@@ -226,27 +240,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             invoiceDao.updatePaymentStatus(invoice.id, "Refunded")
             invoiceDao.updateInvoiceNotes(invoice.id, invoice.notes + "\nRefund reason: $refundReason")
-            // Notify member of refund
-            notificationDao.insertNotification(AdminNotification(
-                type = "refund",
-                title = "Refund Processed",
-                message = "Your payment of ${invoice.price} for ${invoice.itemName} has been refunded. Reason: $refundReason",
-                relatedUserId = invoice.userId,
-                isAdminNotification = false
-            ))
-            // Notify admin
-            notificationDao.insertNotification(AdminNotification(
-                type = "refund",
-                title = "Refund Issued",
-                message = "Refund of ${invoice.price} issued to ${invoice.userName} for ${invoice.itemName}",
-                relatedUserId = invoice.userId,
-                isAdminNotification = true
-            ))
+            notificationDao.insertNotification(AdminNotification(type = "refund", title = "Refund Processed", message = "Your payment of ${invoice.price} for ${invoice.itemName} has been refunded. Reason: $refundReason", relatedUserId = invoice.userId, isAdminNotification = false))
+            notificationDao.insertNotification(AdminNotification(type = "refund", title = "Refund Issued", message = "Refund of ${invoice.price} issued to ${invoice.userName} for ${invoice.itemName}", relatedUserId = invoice.userId, isAdminNotification = true))
         }
     }
 
     fun getMemberInvoices(userId: Int): Flow<List<Invoice>> = invoiceDao.getInvoicesForUser(userId)
-
     fun getMemberNotifications(userId: Int): Flow<List<AdminNotification>> = notificationDao.getMemberNotifications(userId)
 
     fun exportAllInvoices(invoices: List<Invoice>): String {
@@ -254,43 +253,78 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         exportText += "Generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}\n"
         exportText += "================================\n\n"
         invoices.forEach { inv ->
-            exportText += "Invoice #${inv.id}\n"
-            exportText += "Customer: ${inv.userName}\n"
-            exportText += "Item: ${inv.itemName}\n"
-            exportText += "Quantity: ${inv.quantity}\n"
-            exportText += "Price: ${inv.price}\n"
-            exportText += "Status: ${inv.paymentStatus}\n"
-            exportText += "Transaction ID: ${inv.transactionId}\n"
-            exportText += "Notes: ${inv.notes}\n"
-            exportText += "--------------------------------\n\n"
+            exportText += "Invoice #${inv.id}\nCustomer: ${inv.userName}\nItem: ${inv.itemName}\nQuantity: ${inv.quantity}\nPrice: ${inv.price}\nStatus: ${inv.paymentStatus}\nTransaction ID: ${inv.transactionId}\nNotes: ${inv.notes}\n--------------------------------\n\n"
         }
         return exportText
     }
 
-    fun updateInvoice(invoice: Invoice) {
-        viewModelScope.launch { invoiceDao.updateInvoice(invoice) }
-    }
-
-    fun deleteInvoice(invoice: Invoice) {
-        viewModelScope.launch { invoiceDao.deleteInvoice(invoice) }
-    }
+    fun updateInvoice(invoice: Invoice) { viewModelScope.launch { invoiceDao.updateInvoice(invoice) } }
+    fun deleteInvoice(invoice: Invoice) { viewModelScope.launch { invoiceDao.deleteInvoice(invoice) } }
 
     fun sendInvoiceReminder(invoice: Invoice) {
         viewModelScope.launch {
-            notificationDao.insertNotification(AdminNotification(
-                type = "invoice",
-                title = "Payment Reminder",
-                message = "Reminder: Your invoice for ${invoice.itemName} (${invoice.price}) is pending payment.",
-                relatedUserId = invoice.userId,
-                isAdminNotification = false
-            ))
-            notificationDao.insertNotification(AdminNotification(
-                type = "alert",
-                title = "Payment Reminder Sent",
-                message = "Payment reminder sent to ${invoice.userName} for Invoice #${invoice.id}",
-                relatedUserId = invoice.userId,
-                isAdminNotification = true
-            ))
+            notificationDao.insertNotification(AdminNotification(type = "invoice", title = "Payment Reminder", message = "Reminder: Your invoice for ${invoice.itemName} (${invoice.price}) is pending payment.", relatedUserId = invoice.userId, isAdminNotification = false))
+            notificationDao.insertNotification(AdminNotification(type = "alert", title = "Payment Reminder Sent", message = "Payment reminder sent to ${invoice.userName} for Invoice #${invoice.id}", relatedUserId = invoice.userId, isAdminNotification = true))
         }
     }
+
+    // ==================== NEWS MANAGEMENT ====================
+
+    fun createNews(title: String, summary: String, content: String, isFeatured: Boolean = true) {
+        viewModelScope.launch {
+            val authorName = _currentUser.value?.fullName ?: "Admin"
+            val authorId = _currentUser.value?.id ?: 0
+            newsDao.insertNews(News(title = title, summary = summary, content = content, authorId = authorId, authorName = authorName, isFeatured = isFeatured, isPublished = true))
+            notificationDao.insertNotification(AdminNotification(type = "alert", title = "News Published", message = "\"$title\" has been published", isAdminNotification = true))
+        }
+    }
+
+    fun updateNews(news: News) { viewModelScope.launch { newsDao.updateNews(news.copy(updatedAt = System.currentTimeMillis())) } }
+    fun deleteNews(news: News) { viewModelScope.launch { newsDao.deleteNews(news) } }
+    fun setNewsFeatured(newsId: Int, featured: Boolean) { viewModelScope.launch { newsDao.setFeatured(newsId, featured) } }
+    fun setNewsPublished(newsId: Int, published: Boolean) { viewModelScope.launch { newsDao.setPublished(newsId, published) } }
+    suspend fun getNewsById(newsId: Int): News? = newsDao.getNewsById(newsId)
+
+    // ==================== USER MANAGEMENT ====================
+
+    fun createUser(email: String, password: String, fullName: String, memberNumber: String, role: String, isAdmin: Boolean = false) {
+        viewModelScope.launch {
+            val existing = userDao.getUserByEmail(email)
+            if (existing == null) {
+                userDao.insertUser(User(email = email, password = password, fullName = fullName, memberNumber = memberNumber, role = role, isAdmin = isAdmin, membershipType = "Approved"))
+                notificationDao.insertNotification(AdminNotification(type = "member", title = "User Created", message = "$fullName created as $role", isAdminNotification = true))
+            }
+        }
+    }
+
+    fun updateUserRole(userId: Int, role: String) {
+        viewModelScope.launch {
+            val isAdmin = role == "admin"
+            userDao.setAdminStatus(userId, isAdmin, role)
+            val user = userDao.getUserById(userId)
+            notificationDao.insertNotification(AdminNotification(type = "member", title = "Role Updated", message = "${user?.fullName ?: "User"} is now $role", isAdminNotification = true))
+        }
+    }
+
+    fun deleteUser(user: User) {
+        viewModelScope.launch {
+            userDao.deleteUser(user)
+            notificationDao.insertNotification(AdminNotification(type = "member", title = "User Deleted", message = "${user.fullName} has been removed", isAdminNotification = true))
+        }
+    }
+
+    fun promoteToModerator(userId: Int) { updateUserRole(userId, "moderator") }
+    fun promoteToAdmin(userId: Int) { updateUserRole(userId, "admin") }
+    fun demoteToMember(userId: Int) { updateUserRole(userId, "member") }
+
+    // ==================== FORUM MODERATION ====================
+
+    fun deleteForumPost(post: ForumPost) {
+        viewModelScope.launch {
+            forumDao.deletePost(post)
+            notificationDao.insertNotification(AdminNotification(type = "alert", title = "Post Deleted", message = "Forum post by ${post.authorName} was removed", isAdminNotification = true))
+        }
+    }
+
+    fun getForumPostsByUser(userId: Int): Flow<List<ForumPost>> = forumDao.getPostsByUser(userId)
 }

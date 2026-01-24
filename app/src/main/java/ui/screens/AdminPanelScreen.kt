@@ -24,14 +24,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.capstone2.data.AdminNotification
-import com.example.capstone2.data.Course
-import com.example.capstone2.data.Invoice
-import com.example.capstone2.data.User
+import com.example.capstone2.data.*
 
 @Composable
 private fun EmptyBox(emoji: String, title: String, subtitle: String) {
@@ -52,17 +50,17 @@ private fun AdminInfoRow(label: String, value: String) {
         Text(value, color = Color.White, fontSize = 14.sp)
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminPanelScreen(navController: NavController) {
     val userViewModel: UserViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Notifications", "Members", "Invoices", "Courses")
+    val tabs = listOf("Notifications", "Members", "Invoices", "Courses", "News", "Users", "Forum")
     val notifications by userViewModel.activeNotifications.collectAsState(initial = emptyList())
     val unreadCount by userViewModel.unreadCount.collectAsState(initial = 0)
     var selectedMemberId by remember { mutableStateOf<Int?>(null) }
     var selectedInvoice by remember { mutableStateOf<Invoice?>(null) }
+    var selectedNews by remember { mutableStateOf<News?>(null) }
     var showExpiryMemberList by remember { mutableStateOf(false) }
     var selectedExpiryMember by remember { mutableStateOf<User?>(null) }
     var expiryMessageSubject by remember { mutableStateOf("Certification Expiry Reminder") }
@@ -71,22 +69,18 @@ fun AdminPanelScreen(navController: NavController) {
 
     LaunchedEffect(showExpiryMemberList) { if (showExpiryMemberList) userViewModel.getAllMembers() }
 
-    BackHandler(enabled = selectedMemberId != null || selectedInvoice != null || selectedExpiryMember != null) {
+    BackHandler(enabled = selectedMemberId != null || selectedInvoice != null || selectedExpiryMember != null || selectedNews != null) {
         when {
             selectedExpiryMember != null -> selectedExpiryMember = null
             selectedMemberId != null -> selectedMemberId = null
             selectedInvoice != null -> selectedInvoice = null
+            selectedNews != null -> selectedNews = null
         }
     }
 
-    if (selectedMemberId != null) {
-        MemberDetailView(userId = selectedMemberId!!, userViewModel = userViewModel, onBack = { selectedMemberId = null })
-        return
-    }
-    if (selectedInvoice != null) {
-        InvoiceDetailView(invoice = selectedInvoice!!, userViewModel = userViewModel, onBack = { selectedInvoice = null }, onRefresh = { selectedInvoice = null })
-        return
-    }
+    if (selectedMemberId != null) { MemberDetailView(userId = selectedMemberId!!, userViewModel = userViewModel, onBack = { selectedMemberId = null }); return }
+    if (selectedInvoice != null) { InvoiceDetailView(invoice = selectedInvoice!!, userViewModel = userViewModel, onBack = { selectedInvoice = null }, onRefresh = { selectedInvoice = null }); return }
+    if (selectedNews != null) { NewsDetailView(news = selectedNews!!, userViewModel = userViewModel, onBack = { selectedNews = null }); return }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A))) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -102,6 +96,9 @@ fun AdminPanelScreen(navController: NavController) {
             1 -> MembersContent(userViewModel) { selectedMemberId = it }
             2 -> InvoicesContent(userViewModel) { selectedInvoice = it }
             3 -> CoursesContent(userViewModel)
+            4 -> NewsContent(userViewModel) { selectedNews = it }
+            5 -> UsersContent(userViewModel)
+            6 -> ForumModerationContent(userViewModel)
         }
     }
 
@@ -120,7 +117,6 @@ fun AdminPanelScreen(navController: NavController) {
             dismissButton = { OutlinedButton(onClick = { selectedExpiryMember = null }) { Text("BACK", color = Color(0xFF888888)) } })
     }
 }
-
 @Composable
 private fun NotificationsContent(vm: UserViewModel, notifications: List<AdminNotification>, onMember: (Int) -> Unit, onInvoice: () -> Unit, onExpiryAlert: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -176,7 +172,6 @@ private fun MemberItem(m: User, onClick: () -> Unit) {
         }
     }
 }
-
 @Composable
 private fun InvoicesContent(vm: UserViewModel, onInvoice: (Invoice) -> Unit) {
     val context = LocalContext.current
@@ -205,33 +200,14 @@ private fun InvoicesContent(vm: UserViewModel, onInvoice: (Invoice) -> Unit) {
         else { LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { items(list) { i -> InvoiceItem(i) { onInvoice(i) } } } }
     }
 
-    if (showCreateDialog) {
-        CreateInvoiceDialog(vm = vm, members = allMembers.filter { !it.isAdmin }, onDismiss = { showCreateDialog = false })
-    }
+    if (showCreateDialog) { CreateInvoiceDialog(vm = vm, members = allMembers.filter { !it.isAdmin }, onDismiss = { showCreateDialog = false }) }
 
     if (showExportDialog) {
         val exportText = vm.exportAllInvoices(invoices)
         AlertDialog(onDismissRequest = { showExportDialog = false }, containerColor = Color(0xFF252525),
             title = { Text("Export Invoices", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text("${invoices.size} invoices ready to export", color = Color(0xFF90EE90), fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Card(modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) {
-                        Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
-                            Text(exportText, color = Color(0xFF888888), fontSize = 11.sp)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("Invoices", exportText))
-                    Toast.makeText(context, "Invoices copied to clipboard!", Toast.LENGTH_SHORT).show()
-                    showExportDialog = false
-                }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("COPY") }
-            },
+            text = { Column { Text("${invoices.size} invoices ready to export", color = Color(0xFF90EE90), fontSize = 14.sp); Spacer(modifier = Modifier.height(12.dp)); Card(modifier = Modifier.fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))) { Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) { Text(exportText, color = Color(0xFF888888), fontSize = 11.sp) } } } },
+            confirmButton = { Button(onClick = { val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager; clipboard.setPrimaryClip(ClipData.newPlainText("Invoices", exportText)); Toast.makeText(context, "Invoices copied to clipboard!", Toast.LENGTH_SHORT).show(); showExportDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("COPY") } },
             dismissButton = { OutlinedButton(onClick = { showExportDialog = false }) { Text("CLOSE", color = Color(0xFF888888)) } })
     }
 }
@@ -251,14 +227,7 @@ private fun CreateInvoiceDialog(vm: UserViewModel, members: List<User>, onDismis
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text("Send invoice to member", color = Color(0xFF90EE90), fontSize = 13.sp)
                 Spacer(modifier = Modifier.height(16.dp))
-                Card(modifier = Modifier.fillMaxWidth().clickable { showMemberPicker = true }, colors = CardDefaults.cardColors(containerColor = Color(0xFF333333))) {
-                    Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Person, null, tint = Color(0xFF888888))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(selectedMember?.fullName ?: "Select Member", color = if (selectedMember != null) Color.White else Color(0xFF888888), modifier = Modifier.weight(1f))
-                        Icon(Icons.Default.ArrowDropDown, null, tint = Color(0xFF888888))
-                    }
-                }
+                Card(modifier = Modifier.fillMaxWidth().clickable { showMemberPicker = true }, colors = CardDefaults.cardColors(containerColor = Color(0xFF333333))) { Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Person, null, tint = Color(0xFF888888)); Spacer(modifier = Modifier.width(12.dp)); Text(selectedMember?.fullName ?: "Select Member", color = if (selectedMember != null) Color.White else Color(0xFF888888), modifier = Modifier.weight(1f)); Icon(Icons.Default.ArrowDropDown, null, tint = Color(0xFF888888)) } }
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(value = itemName, onValueChange = { itemName = it }, label = { Text("Item/Service Name") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -270,32 +239,13 @@ private fun CreateInvoiceDialog(vm: UserViewModel, members: List<User>, onDismis
                 OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Message (optional)") }, modifier = Modifier.fillMaxWidth().height(100.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
             }
         },
-        confirmButton = {
-            Button(onClick = {
-                selectedMember?.let { member ->
-                    vm.createCustomInvoice(member.id, member.fullName, itemName, if (price.startsWith("$")) price else "$$price", quantity.toIntOrNull() ?: 1, message)
-                    onDismiss()
-                }
-            }, enabled = selectedMember != null && itemName.isNotBlank() && price.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Icon(Icons.Default.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("SEND INVOICE") }
-        },
+        confirmButton = { Button(onClick = { selectedMember?.let { member -> vm.createCustomInvoice(member.id, member.fullName, itemName, if (price.startsWith("$")) price else "$$price", quantity.toIntOrNull() ?: 1, message); onDismiss() } }, enabled = selectedMember != null && itemName.isNotBlank() && price.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Icon(Icons.Default.Send, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("SEND INVOICE") } },
         dismissButton = { OutlinedButton(onClick = onDismiss) { Text("CANCEL", color = Color(0xFF888888)) } })
 
     if (showMemberPicker) {
         AlertDialog(onDismissRequest = { showMemberPicker = false }, containerColor = Color(0xFF252525),
             title = { Text("Select Member", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = {
-                LazyColumn(modifier = Modifier.height(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(members) { m ->
-                        Card(modifier = Modifier.fillMaxWidth().clickable { selectedMember = m; showMemberPicker = false }, colors = CardDefaults.cardColors(containerColor = Color(0xFF333333))) {
-                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(36.dp).background(Color(0xFF007236), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) { Text(m.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column { Text(m.fullName, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp); Text(m.email, color = Color(0xFF888888), fontSize = 11.sp) }
-                            }
-                        }
-                    }
-                }
-            },
+            text = { LazyColumn(modifier = Modifier.height(300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items(members) { m -> Card(modifier = Modifier.fillMaxWidth().clickable { selectedMember = m; showMemberPicker = false }, colors = CardDefaults.cardColors(containerColor = Color(0xFF333333))) { Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(36.dp).background(Color(0xFF007236), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) { Text(m.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp) }; Spacer(modifier = Modifier.width(12.dp)); Column { Text(m.fullName, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp); Text(m.email, color = Color(0xFF888888), fontSize = 11.sp) } } } } } },
             confirmButton = { },
             dismissButton = { OutlinedButton(onClick = { showMemberPicker = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
     }
@@ -314,7 +264,6 @@ private fun InvoiceItem(i: Invoice, onClick: () -> Unit) {
         }
     }
 }
-
 @Composable
 private fun CoursesContent(vm: UserViewModel) {
     val courses by vm.allCourses.collectAsState(initial = emptyList())
@@ -411,7 +360,7 @@ private fun CoursesContent(vm: UserViewModel) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = courseInstructor, onValueChange = { courseInstructor = it }, label = { Text("Instructor Name") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = courseEmail, onValueChange = { courseEmail = it }, label = { Text("Instructor Email") }, modifier = Modifier.weight(1f), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    OutlinedTextField(value = courseEmail, onValueChange = { courseEmail = it }, label = { Text("Instructor Email") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = courseLocation, onValueChange = { courseLocation = it }, label = { Text("Location") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
                 }
@@ -427,7 +376,285 @@ private fun CoursesContent(vm: UserViewModel) {
             dismissButton = { OutlinedButton(onClick = { showDeleteDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
     }
 }
+@Composable
+private fun NewsContent(vm: UserViewModel, onNews: (News) -> Unit) {
+    val news by vm.allNews.collectAsState(initial = emptyList())
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newsTitle by remember { mutableStateOf("") }
+    var newsSummary by remember { mutableStateOf("") }
+    var newsContent by remember { mutableStateOf("") }
+    var isFeatured by remember { mutableStateOf(true) }
 
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("MANAGE NEWS", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Button(onClick = { newsTitle = ""; newsSummary = ""; newsContent = ""; isFeatured = true; showCreateDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("NEW", fontSize = 12.sp) }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        if (news.isEmpty()) { EmptyBox("📰", "No News Articles", "Create your first news post") }
+        else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(news) { n ->
+                    Card(modifier = Modifier.fillMaxWidth().clickable { onNews(n) }, colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(n.title, color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (n.isFeatured) { Badge(containerColor = Color(0xFFFF9800)) { Text("Featured", fontSize = 9.sp) } }
+                                    if (n.isPublished) { Badge(containerColor = Color(0xFF4CAF50)) { Text("Live", fontSize = 9.sp) } }
+                                    else { Badge(containerColor = Color(0xFF888888)) { Text("Draft", fontSize = 9.sp) } }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(n.summary, color = Color(0xFF888888), fontSize = 12.sp, maxLines = 2)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("By ${n.authorName} • ${java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault()).format(java.util.Date(n.createdAt))}", color = Color(0xFF666666), fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCreateDialog) {
+        AlertDialog(onDismissRequest = { showCreateDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Create News Article", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(value = newsTitle, onValueChange = { newsTitle = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newsSummary, onValueChange = { newsSummary = it }, label = { Text("Summary (short preview)") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newsContent, onValueChange = { newsContent = it }, label = { Text("Full Content") }, modifier = Modifier.fillMaxWidth().height(150.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = isFeatured, onCheckedChange = { isFeatured = it }); Spacer(modifier = Modifier.width(8.dp)); Text("Feature on Home Screen", color = Color.White) }
+                }
+            },
+            confirmButton = { Button(onClick = { vm.createNews(newsTitle, newsSummary, newsContent, isFeatured); showCreateDialog = false }, enabled = newsTitle.isNotBlank() && newsContent.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Text("PUBLISH") } },
+            dismissButton = { OutlinedButton(onClick = { showCreateDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+}
+
+@Composable
+private fun NewsDetailView(news: News, userViewModel: UserViewModel, onBack: () -> Unit) {
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var editTitle by remember { mutableStateOf(news.title) }
+    var editSummary by remember { mutableStateOf(news.summary) }
+    var editContent by remember { mutableStateOf(news.content) }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A))) {
+        Row(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) }; Text("News Details", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+        Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (news.isFeatured) { Badge(containerColor = Color(0xFFFF9800)) { Text("Featured", fontSize = 10.sp) } }
+                        if (news.isPublished) { Badge(containerColor = Color(0xFF4CAF50)) { Text("Published", fontSize = 10.sp) } }
+                        else { Badge(containerColor = Color(0xFF888888)) { Text("Draft", fontSize = 10.sp) } }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(news.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("By ${news.authorName} • ${java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(news.createdAt))}", color = Color(0xFF90EE90), fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(16.dp)); HorizontalDivider(color = Color(0xFF444444)); Spacer(modifier = Modifier.height(16.dp))
+                    Text(news.summary, color = Color(0xFFAAAAAA), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(news.content, color = Color.White, fontSize = 14.sp, lineHeight = 22.sp)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { userViewModel.setNewsFeatured(news.id, !news.isFeatured) }, colors = ButtonDefaults.buttonColors(containerColor = if (news.isFeatured) Color(0xFF888888) else Color(0xFFFF9800)), modifier = Modifier.weight(1f)) { Text(if (news.isFeatured) "UNFEATURE" else "FEATURE") }
+                Button(onClick = { userViewModel.setNewsPublished(news.id, !news.isPublished) }, colors = ButtonDefaults.buttonColors(containerColor = if (news.isPublished) Color(0xFF888888) else Color(0xFF4CAF50)), modifier = Modifier.weight(1f)) { Text(if (news.isPublished) "UNPUBLISH" else "PUBLISH") }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { showEditDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)), modifier = Modifier.weight(1f)) { Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("EDIT") }
+                Button(onClick = { showDeleteDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336)), modifier = Modifier.weight(1f)) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("DELETE") }
+            }
+        }
+    }
+
+    if (showEditDialog) {
+        AlertDialog(onDismissRequest = { showEditDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Edit News", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(value = editTitle, onValueChange = { editTitle = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = editSummary, onValueChange = { editSummary = it }, label = { Text("Summary") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = editContent, onValueChange = { editContent = it }, label = { Text("Content") }, modifier = Modifier.fillMaxWidth().height(150.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White))
+                }
+            },
+            confirmButton = { Button(onClick = { userViewModel.updateNews(news.copy(title = editTitle, summary = editSummary, content = editContent)); showEditDialog = false; onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Text("SAVE") } },
+            dismissButton = { OutlinedButton(onClick = { showEditDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(onDismissRequest = { showDeleteDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Delete News", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete \"${news.title}\"?", color = Color(0xFFAAAAAA)) },
+            confirmButton = { Button(onClick = { userViewModel.deleteNews(news); showDeleteDialog = false; onBack() }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))) { Text("DELETE") } },
+            dismissButton = { OutlinedButton(onClick = { showDeleteDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+}
+@Composable
+private fun UsersContent(vm: UserViewModel) {
+    val users by vm.allUsers.collectAsState(initial = emptyList())
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var showRoleDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedUser by remember { mutableStateOf<User?>(null) }
+    var newEmail by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var newFullName by remember { mutableStateOf("") }
+    var newMemberNumber by remember { mutableStateOf("") }
+    var newRole by remember { mutableStateOf("member") }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("USER MANAGEMENT", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Button(onClick = { newEmail = ""; newPassword = ""; newFullName = ""; newMemberNumber = "MEM${System.currentTimeMillis() % 10000}"; newRole = "member"; showCreateDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236)), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) { Icon(Icons.Default.PersonAdd, null, modifier = Modifier.size(16.dp)); Spacer(modifier = Modifier.width(4.dp)); Text("ADD", fontSize = 12.sp) }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        if (users.isEmpty()) { EmptyBox("👤", "No Users", "Create your first user") }
+        else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(users) { u ->
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(44.dp).background(when (u.role) { "admin" -> Color(0xFFFF6B6B); "moderator" -> Color(0xFFFF9800); else -> Color(0xFF007236) }, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) { Text(u.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold) }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(u.fullName, color = Color.White, fontWeight = FontWeight.SemiBold)
+                                    Text(u.email, color = Color(0xFF888888), fontSize = 12.sp)
+                                }
+                                Badge(containerColor = when (u.role) { "admin" -> Color(0xFFFF6B6B); "moderator" -> Color(0xFFFF9800); else -> Color(0xFF007236) }) { Text(u.role.replaceFirstChar { it.uppercase() }, fontSize = 10.sp) }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(onClick = { selectedUser = u; showRoleDialog = true }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(8.dp)) { Icon(Icons.Default.Security, null, modifier = Modifier.size(14.dp), tint = Color(0xFF90EE90)); Spacer(modifier = Modifier.width(4.dp)); Text("ROLE", fontSize = 11.sp, color = Color(0xFF90EE90)) }
+                                OutlinedButton(onClick = { selectedUser = u; showDeleteDialog = true }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(8.dp), enabled = u.email != "admin@kdfgc.org") { Icon(Icons.Default.Delete, null, modifier = Modifier.size(14.dp), tint = if (u.email != "admin@kdfgc.org") Color(0xFFFF6B6B) else Color(0xFF444444)); Spacer(modifier = Modifier.width(4.dp)); Text("DELETE", fontSize = 11.sp, color = if (u.email != "admin@kdfgc.org") Color(0xFFFF6B6B) else Color(0xFF444444)) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showCreateDialog) {
+        AlertDialog(onDismissRequest = { showCreateDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Create New User", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(value = newFullName, onValueChange = { newFullName = it }, label = { Text("Full Name") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newPassword, onValueChange = { newPassword = it }, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true, visualTransformation = PasswordVisualTransformation())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newMemberNumber, onValueChange = { newMemberNumber = it }, label = { Text("Member Number") }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF007236), unfocusedBorderColor = Color(0xFF444444), focusedTextColor = Color.White, unfocusedTextColor = Color.White), singleLine = true)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Role", color = Color(0xFF888888), fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("member", "moderator", "admin").forEach { role ->
+                            FilterChip(selected = newRole == role, onClick = { newRole = role }, label = { Text(role.replaceFirstChar { it.uppercase() }) }, colors = FilterChipDefaults.filterChipColors(selectedContainerColor = when (role) { "admin" -> Color(0xFFFF6B6B); "moderator" -> Color(0xFFFF9800); else -> Color(0xFF007236) }))
+                        }
+                    }
+                }
+            },
+            confirmButton = { Button(onClick = { vm.createUser(newEmail, newPassword, newFullName, newMemberNumber, newRole, newRole == "admin"); showCreateDialog = false }, enabled = newEmail.isNotBlank() && newPassword.isNotBlank() && newFullName.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007236))) { Text("CREATE") } },
+            dismissButton = { OutlinedButton(onClick = { showCreateDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+
+    if (showRoleDialog && selectedUser != null) {
+        AlertDialog(onDismissRequest = { showRoleDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Change Role: ${selectedUser!!.fullName}", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Current role: ${selectedUser!!.role}", color = Color(0xFF888888), fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    listOf("member" to "Member - Basic access", "moderator" to "Moderator - Forum moderation", "admin" to "Admin - Full access").forEach { (role, desc) ->
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { vm.updateUserRole(selectedUser!!.id, role); showRoleDialog = false }, colors = CardDefaults.cardColors(containerColor = if (selectedUser!!.role == role) Color(0xFF333333) else Color(0xFF252525))) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = selectedUser!!.role == role, onClick = { vm.updateUserRole(selectedUser!!.id, role); showRoleDialog = false })
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column { Text(role.replaceFirstChar { it.uppercase() }, color = Color.White, fontWeight = FontWeight.SemiBold); Text(desc, color = Color(0xFF888888), fontSize = 11.sp) }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { },
+            dismissButton = { OutlinedButton(onClick = { showRoleDialog = false }) { Text("CLOSE", color = Color(0xFF888888)) } })
+    }
+
+    if (showDeleteDialog && selectedUser != null) {
+        AlertDialog(onDismissRequest = { showDeleteDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Delete User", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete ${selectedUser!!.fullName}? This cannot be undone.", color = Color(0xFFAAAAAA)) },
+            confirmButton = { Button(onClick = { vm.deleteUser(selectedUser!!); showDeleteDialog = false; selectedUser = null }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))) { Text("DELETE") } },
+            dismissButton = { OutlinedButton(onClick = { showDeleteDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+}
+@Composable
+private fun ForumModerationContent(vm: UserViewModel) {
+    val posts by vm.allForumPosts.collectAsState(initial = emptyList())
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedPost by remember { mutableStateOf<ForumPost?>(null) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("FORUM MODERATION", color = Color(0xFFFF6B6B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(12.dp))
+        if (posts.isEmpty()) {
+            EmptyBox("💬", "No Forum Posts", "Forum posts will appear here")
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(posts) { p ->
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF252525))) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(36.dp).background(Color(0xFF007236), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
+                                    Text(p.author.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(p.author, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    Text(java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(p.timestamp)), color = Color(0xFF888888), fontSize = 11.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(p.content, color = Color(0xFFCCCCCC), fontSize = 13.sp, maxLines = 3)
+                            if (!p.photoUri.isNullOrEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("📷 Has image attachment", color = Color(0xFF90EE90), fontSize = 11.sp)
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedButton(onClick = { selectedPost = p; showDeleteDialog = true }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)) {
+                                Icon(Icons.Default.Delete, null, modifier = Modifier.size(14.dp), tint = Color(0xFFFF6B6B))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("DELETE POST", fontSize = 11.sp, color = Color(0xFFFF6B6B))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDeleteDialog && selectedPost != null) {
+        AlertDialog(onDismissRequest = { showDeleteDialog = false }, containerColor = Color(0xFF252525),
+            title = { Text("Delete Post", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("Delete this post by ${selectedPost!!.author}? This action cannot be undone.", color = Color(0xFFAAAAAA)) },
+            confirmButton = { Button(onClick = { vm.deleteForumPost(selectedPost!!); showDeleteDialog = false; selectedPost = null }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))) { Text("DELETE") } },
+            dismissButton = { OutlinedButton(onClick = { showDeleteDialog = false }) { Text("CANCEL", color = Color(0xFF888888)) } })
+    }
+}
 @Composable
 private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: () -> Unit) {
     var member by remember { mutableStateOf<User?>(null) }
@@ -452,7 +679,7 @@ private fun MemberDetailView(userId: Int, userViewModel: UserViewModel, onBack: 
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(60.dp).background(Color(0xFF007236), RoundedCornerShape(30.dp)), contentAlignment = Alignment.Center) { Text(member!!.fullName.take(2).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) }; Spacer(modifier = Modifier.width(16.dp)); Column { Text(member!!.fullName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold); Text("Member #${member!!.memberNumber}", color = Color(0xFF90EE90)) } }
                         Spacer(modifier = Modifier.height(20.dp)); HorizontalDivider(color = Color(0xFF444444)); Spacer(modifier = Modifier.height(20.dp))
-                        AdminInfoRow("Email", member!!.email); AdminInfoRow("Phone", member!!.phone.ifEmpty { "Not provided" }); AdminInfoRow("Member Type", member!!.membershipType); AdminInfoRow("PAL Number", member!!.palNumber.ifEmpty { "Not provided" }); AdminInfoRow("Admin", if (member!!.isAdmin) "Yes" else "No")
+                        AdminInfoRow("Email", member!!.email); AdminInfoRow("Phone", member!!.phone.ifEmpty { "Not provided" }); AdminInfoRow("Member Type", member!!.membershipType); AdminInfoRow("PAL Number", member!!.palNumber.ifEmpty { "Not provided" }); AdminInfoRow("Role", member!!.role.replaceFirstChar { it.uppercase() })
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))

@@ -13,6 +13,7 @@ data class User(
     val memberNumber: String = "",
     val membershipType: String = "Pending",
     val isAdmin: Boolean = false,
+    val role: String = "member", // "admin", "moderator", "member"
     val phone: String = "",
     val palNumber: String = "",
     val registrationDate: Long = System.currentTimeMillis(),
