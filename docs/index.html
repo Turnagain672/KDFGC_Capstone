@@ -3,61 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ryan Laloge | Mobile Developer Portfolio</title>
+    <title>Ryan Laloge | Android Developer</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo">Ryan Laloge</div>
+            <div class="logo">RL</div>
             <ul>
                 <li><a href="#about">About</a></li>
+                <li><a href="#skills">Skills</a></li>
                 <li><a href="#projects">Projects</a></li>
-                <li><a href="#screenshots">Screenshots</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
         </nav>
     </header>
 
     <section id="hero">
-        <h1>Mobile Developer</h1>
-        <p>Building Android applications with Kotlin & Jetpack Compose</p>
+        <h1>Ryan Laloge</h1>
+        <p class="tagline">Android Developer | Kotlin & Jetpack Compose</p>
+        <div class="hero-buttons">
+            <a href="#projects" class="btn-primary">View My Work</a>
+            <a href="https://github.com/Turnagain672" target="_blank" class="btn-secondary"><i class="fab fa-github"></i> GitHub</a>
+        </div>
     </section>
 
     <section id="about">
         <h2>About Me</h2>
-        <p>I'm a mobile developer specializing in Android development using Kotlin and Jetpack Compose. Currently completing my Mobile Web Development diploma at Sundance College.</p>
-    </section>
-
-    <section id="projects">
-        <h2>Projects</h2>
-        <div class="project-card">
-            <h3>KDFGC Club Hub</h3>
-            <p>A full-featured Android app for the Kelowna & District Fish and Game Club. Features include member management, event scheduling, course registration, range logging, and push notifications.</p>
-            <p><strong>Tech:</strong> Kotlin, Jetpack Compose, Room Database, Retrofit, Firebase, Material Design 3</p>
-            <a href="https://github.com/Turnagain672/KDFGC_Capstone" target="_blank">View on GitHub</a>
+        <div class="about-content">
+            <p>I'm a mobile developer passionate about building clean, user-friendly Android applications. Currently completing my Mobile Web Development diploma at Sundance College, with hands-on experience in Kotlin, Jetpack Compose, and modern Android architecture.</p>
+            <p>I focus on writing maintainable code, implementing best practices, and creating apps that solve real problems.</p>
         </div>
     </section>
 
-    <section id="screenshots">
-        <h2>App Screenshots</h2>
+    <section id="skills">
+        <h2>Technical Skills</h2>
+        <div class="skills-grid">
+            <div class="skill-card">
+                <i class="fab fa-android"></i>
+                <h3>Android</h3>
+                <p>Kotlin, Jetpack Compose, Material Design 3</p>
+            </div>
+            <div class="skill-card">
+                <i class="fas fa-database"></i>
+                <h3>Data</h3>
+                <p>Room Database, Retrofit, REST APIs</p>
+            </div>
+            <div class="skill-card">
+                <i class="fas fa-fire"></i>
+                <h3>Firebase</h3>
+                <p>Authentication, Cloud Messaging, Firestore</p>
+            </div>
+            <div class="skill-card">
+                <i class="fas fa-code"></i>
+                <h3>Web</h3>
+                <p>HTML, CSS, JavaScript, Responsive Design</p>
+            </div>
+            <div class="skill-card">
+                <i class="fas fa-vial"></i>
+                <h3>Testing</h3>
+                <p>JUnit, Espresso, UI Testing</p>
+            </div>
+            <div class="skill-card">
+                <i class="fab fa-git-alt"></i>
+                <h3>Tools</h3>
+                <p>Git, GitHub, Android Studio</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects">
+        <h2>Featured Project</h2>
+        <div class="project-card">
+            <div class="project-header">
+                <h3>KDFGC Club Hub</h3>
+                <span class="project-tag">Android App</span>
+            </div>
+            <p>A full-featured membership management app for the Kelowna & District Fish and Game Club. Built to streamline club operations and enhance member experience.</p>
+            
+            <div class="project-features">
+                <h4>Key Features</h4>
+                <ul>
+                    <li><i class="fas fa-check"></i> Member registration and authentication with BCrypt security</li>
+                    <li><i class="fas fa-check"></i> Role-based access control (Admin, Moderator, Member)</li>
+                    <li><i class="fas fa-check"></i> Event scheduling and course registration</li>
+                    <li><i class="fas fa-check"></i> Range visit logging with photo capture</li>
+                    <li><i class="fas fa-check"></i> Admin panel for member and invoice management</li>
+                    <li><i class="fas fa-check"></i> Push notifications via Firebase Cloud Messaging</li>
+                </ul>
+            </div>
+
+            <div class="project-tech">
+                <span>Kotlin</span>
+                <span>Jetpack Compose</span>
+                <span>Room</span>
+                <span>Retrofit</span>
+                <span>Firebase</span>
+                <span>WorkManager</span>
+            </div>
+
+            <a href="https://github.com/Turnagain672/KDFGC_Capstone" target="_blank" class="btn-primary"><i class="fab fa-github"></i> View Source Code</a>
+        </div>
+
+        <h3 class="screenshots-title">App Screenshots</h3>
         <div class="screenshot-gallery">
-            <img src="Screenshot_20260125_094828.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_094852.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_094904.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095007.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095021.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095030.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095039.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095051.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095059.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095107.png" alt="KDFGC App Screenshot">
-            <img src="Screenshot_20260125_095116.png" alt="KDFGC App Screenshot">
+            <img src="Screenshot_20260125_094828.png" alt="Login Screen">
+            <img src="Screenshot_20260125_094852.png" alt="Home Screen">
+            <img src="Screenshot_20260125_094904.png" alt="Events Screen">
+            <img src="Screenshot_20260125_095007.png" alt="Courses Screen">
+            <img src="Screenshot_20260125_095021.png" alt="Range Log">
+            <img src="Screenshot_20260125_095030.png" alt="Forum">
+            <img src="Screenshot_20260125_095039.png" alt="Profile">
+            <img src="Screenshot_20260125_095051.png" alt="Admin Panel">
+            <img src="Screenshot_20260125_095059.png" alt="Notifications">
+            <img src="Screenshot_20260125_095107.png" alt="Members">
+            <img src="Screenshot_20260125_095116.png" alt="Settings">
         </div>
     </section>
 
     <section id="contact">
-        <h2>Contact Me</h2>
+        <h2>Get In Touch</h2>
+        <p class="contact-intro">Interested in working together? Send me a message!</p>
         <form id="contact-form">
             <input type="text" id="name" placeholder="Your Name" required>
             <input type="email" id="email" placeholder="Your Email" required>
@@ -68,8 +135,12 @@
     </section>
 
     <footer>
-        <p>&copy; 2026 Ryan Laloge. All rights reserved.</p>
-        <a href="https://github.com/Turnagain672" target="_blank">GitHub</a>
+        <div class="footer-content">
+            <p>&copy; 2026 Ryan Laloge</p>
+            <div class="footer-links">
+                <a href="https://github.com/Turnagain672" target="_blank"><i class="fab fa-github"></i></a>
+            </div>
+        </div>
     </footer>
 
     <script src="script.js"></script>
