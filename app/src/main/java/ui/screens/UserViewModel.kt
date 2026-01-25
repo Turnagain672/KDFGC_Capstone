@@ -48,13 +48,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             val admin = userDao.getUserByEmail("admin@kdfgc.org")
-            if (admin == null) {
-                userDao.insertUser(User(email = "admin@kdfgc.org", password = "admin123", fullName = "KDFGC Admin", memberNumber = "ADMIN001", isAdmin = true, role = "admin"))
-            }
+            if (admin == null) { userDao.insertUser(User(email = "admin@kdfgc.org", password = "admin123", fullName = "KDFGC Admin", memberNumber = "ADMIN001", isAdmin = true, role = "admin")) }
             val member = userDao.getUserByEmail("member@kdfgc.org")
-            if (member == null) {
-                userDao.insertUser(User(email = "member@kdfgc.org", password = "member123", fullName = "Demo Member", memberNumber = "MEM001", isAdmin = false, role = "member"))
-            }
+            if (member == null) { userDao.insertUser(User(email = "member@kdfgc.org", password = "member123", fullName = "Demo Member", memberNumber = "MEM001", isAdmin = false, role = "member")) }
             val existingNotifications = notificationDao.getActiveNotifications().first()
             if (existingNotifications.isEmpty()) { addSampleNotifications() }
             val existingCourses = courseDao.getAllCourses().first()
@@ -68,27 +64,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun addSampleNews() {
         listOf(
-            News(
-                title = "Spring Shooting Season Opens!",
-                summary = "The outdoor ranges are now open for the spring season. Check the schedule for availability.",
-                content = "We're excited to announce that all outdoor ranges are now open for the spring shooting season!\n\nRange Hours:\n- Weekdays: 9 AM - 8 PM\n- Weekends: 8 AM - 6 PM\n\nPlease remember to follow all safety protocols and sign in at the clubhouse before using any range.\n\nSee you at the range!",
-                authorName = "KDFGC Admin",
-                isFeatured = true
-            ),
-            News(
-                title = "New PAL Course Dates Available",
-                summary = "Register now for upcoming PAL and RPAL courses in February and March.",
-                content = "New course dates have been added for the Canadian Firearms Safety Course (CFSC) and Canadian Restricted Firearms Safety Course (CRFSC).\n\nUpcoming Dates:\n- Feb 15: CFSC (PAL)\n- Feb 22: CRFSC (RPAL)\n- Mar 8: CFSC (PAL)\n- Mar 15: CRFSC (RPAL)\n\nRegister through the app or contact the clubhouse. Space is limited!",
-                authorName = "KDFGC Admin",
-                isFeatured = true
-            ),
-            News(
-                title = "Annual General Meeting - March 20",
-                summary = "All members are invited to attend the AGM. Important club updates and board elections.",
-                content = "The Annual General Meeting will be held on March 20, 2026 at 7:00 PM in the clubhouse.\n\nAgenda:\n- Financial report\n- Range improvements update\n- Board elections\n- Member Q&A\n\nAll members in good standing are encouraged to attend and vote.",
-                authorName = "KDFGC Admin",
-                isFeatured = false
-            )
+            News(title = "Spring Shooting Season Opens!", summary = "The outdoor ranges are now open for the spring season. Check the schedule for availability.", content = "We're excited to announce that all outdoor ranges are now open for the spring shooting season!\n\nRange Hours:\n- Weekdays: 9 AM - 8 PM\n- Weekends: 8 AM - 6 PM\n\nPlease remember to follow all safety protocols and sign in at the clubhouse before using any range.\n\nSee you at the range!", authorName = "KDFGC Admin", isFeatured = true),
+            News(title = "New PAL Course Dates Available", summary = "Register now for upcoming PAL and RPAL courses in February and March.", content = "New course dates have been added for the Canadian Firearms Safety Course (CFSC) and Canadian Restricted Firearms Safety Course (CRFSC).\n\nUpcoming Dates:\n- Feb 15: CFSC (PAL)\n- Feb 22: CRFSC (RPAL)\n- Mar 8: CFSC (PAL)\n- Mar 15: CRFSC (RPAL)\n\nRegister through the app or contact the clubhouse. Space is limited!", authorName = "KDFGC Admin", isFeatured = true),
+            News(title = "Annual General Meeting - March 20", summary = "All members are invited to attend the AGM. Important club updates and board elections.", content = "The Annual General Meeting will be held on March 20, 2026 at 7:00 PM in the clubhouse.\n\nAgenda:\n- Financial report\n- Range improvements update\n- Board elections\n- Member Q&A\n\nAll members in good standing are encouraged to attend and vote.", authorName = "KDFGC Admin", isFeatured = false)
         ).forEach { newsDao.insertNews(it) }
     }
 
@@ -106,10 +84,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun addSampleCourses() {
         listOf(
-            Course(name = "PAL Course", description = "Canadian Firearms Safety Course for Possession and Acquisition License. Learn safe handling, storage, and transportation of non-restricted firearms.", date = "Feb 15, 2026", time = "9:00 AM - 5:00 PM", cost = "$150", classSize = 20, seatsRemaining = 12, instructorName = "John Smith", instructorEmail = "instructor@kdfgc.org", location = "KDFGC Clubhouse"),
-            Course(name = "RPAL Course", description = "Restricted Firearms Safety Course for Restricted Possession and Acquisition License. Covers handguns and restricted rifles.", date = "Feb 22, 2026", time = "9:00 AM - 5:00 PM", cost = "$175", classSize = 15, seatsRemaining = 8, instructorName = "John Smith", instructorEmail = "instructor@kdfgc.org", location = "KDFGC Clubhouse"),
-            Course(name = "Handgun Safety", description = "Advanced handgun safety and marksmanship course. Improve your shooting skills and safety practices.", date = "Mar 1, 2026", time = "10:00 AM - 3:00 PM", cost = "$100", classSize = 10, seatsRemaining = 6, instructorName = "Mike Johnson", instructorEmail = "mike@kdfgc.org", location = "KDFGC Pistol Range"),
-            Course(name = "New Member Orientation", description = "Introduction to KDFGC facilities, rules, and range safety. Required for all new members.", date = "Weekly", time = "6:00 PM - 8:00 PM", cost = "Free", classSize = 30, seatsRemaining = 25, instructorName = "Club Staff", instructorEmail = "info@kdfgc.org", location = "KDFGC Clubhouse")
+            Course(name = "PAL Course", description = "Canadian Firearms Safety Course for Possession and Acquisition License.", date = "Feb 15, 2026", time = "9:00 AM - 5:00 PM", cost = "$150", classSize = 20, seatsRemaining = 12, instructorName = "John Smith", instructorEmail = "instructor@kdfgc.org", location = "KDFGC Clubhouse"),
+            Course(name = "RPAL Course", description = "Restricted Firearms Safety Course for Restricted PAL.", date = "Feb 22, 2026", time = "9:00 AM - 5:00 PM", cost = "$175", classSize = 15, seatsRemaining = 8, instructorName = "John Smith", instructorEmail = "instructor@kdfgc.org", location = "KDFGC Clubhouse"),
+            Course(name = "Handgun Safety", description = "Advanced handgun safety and marksmanship course.", date = "Mar 1, 2026", time = "10:00 AM - 3:00 PM", cost = "$100", classSize = 10, seatsRemaining = 6, instructorName = "Mike Johnson", instructorEmail = "mike@kdfgc.org", location = "KDFGC Pistol Range"),
+            Course(name = "New Member Orientation", description = "Introduction to KDFGC facilities, rules, and range safety.", date = "Weekly", time = "6:00 PM - 8:00 PM", cost = "Free", classSize = 30, seatsRemaining = 25, instructorName = "Club Staff", instructorEmail = "info@kdfgc.org", location = "KDFGC Clubhouse")
         ).forEach { courseDao.insertCourse(it) }
     }
 
@@ -123,10 +101,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             User(email = "tom@example.com", password = "pass123", fullName = "Tom Brown", memberNumber = "MEM006", isAdmin = false, role = "member")
         )
         val userIds = mutableListOf<Int>()
-        sampleMembers.forEach { user ->
-            val existing = userDao.getUserByEmail(user.email)
-            if (existing == null) { val id = userDao.insertUser(user); userIds.add(id.toInt()) } else { userIds.add(existing.id) }
-        }
+        sampleMembers.forEach { user -> val existing = userDao.getUserByEmail(user.email); if (existing == null) { val id = userDao.insertUser(user); userIds.add(id.toInt()) } else { userIds.add(existing.id) } }
         listOf(
             AdminNotification(type = "document", title = "Document Upload", message = "John Doe uploaded PAL License", timestamp = now - 2 * 60 * 1000, relatedUserId = userIds.getOrNull(0), actionRequired = true, actionType = "approve_doc"),
             AdminNotification(type = "purchase", title = "New Purchase", message = "Jane Smith purchased 10-Visit Pass", timestamp = now - 15 * 60 * 1000, relatedUserId = userIds.getOrNull(1), relatedPurchaseId = 1),
@@ -225,8 +200,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun cancelCourseRegistration(courseId: Int) { viewModelScope.launch { courseDao.cancelSeat(courseId) } }
     suspend fun getCourseById(courseId: Int): Course? = courseDao.getCourseById(courseId)
 
-    // ==================== INVOICE MANAGEMENT ====================
-
     fun createCustomInvoice(userId: Int, userName: String, itemName: String, price: String, quantity: Int = 1, message: String = "") {
         viewModelScope.launch {
             val invoice = Invoice(userId = userId, userName = userName, itemName = itemName, price = price, quantity = quantity, paymentStatus = "Pending", paymentMethod = "Pending", transactionId = "INV-${System.currentTimeMillis()}", notes = message)
@@ -249,12 +222,8 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun getMemberNotifications(userId: Int): Flow<List<AdminNotification>> = notificationDao.getMemberNotifications(userId)
 
     fun exportAllInvoices(invoices: List<Invoice>): String {
-        var exportText = "KDFGC INVOICE EXPORT\n"
-        exportText += "Generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}\n"
-        exportText += "================================\n\n"
-        invoices.forEach { inv ->
-            exportText += "Invoice #${inv.id}\nCustomer: ${inv.userName}\nItem: ${inv.itemName}\nQuantity: ${inv.quantity}\nPrice: ${inv.price}\nStatus: ${inv.paymentStatus}\nTransaction ID: ${inv.transactionId}\nNotes: ${inv.notes}\n--------------------------------\n\n"
-        }
+        var exportText = "KDFGC INVOICE EXPORT\nGenerated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}\n================================\n\n"
+        invoices.forEach { inv -> exportText += "Invoice #${inv.id}\nCustomer: ${inv.userName}\nItem: ${inv.itemName}\nQuantity: ${inv.quantity}\nPrice: ${inv.price}\nStatus: ${inv.paymentStatus}\nTransaction ID: ${inv.transactionId}\nNotes: ${inv.notes}\n--------------------------------\n\n" }
         return exportText
     }
 
@@ -267,8 +236,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             notificationDao.insertNotification(AdminNotification(type = "alert", title = "Payment Reminder Sent", message = "Payment reminder sent to ${invoice.userName} for Invoice #${invoice.id}", relatedUserId = invoice.userId, isAdminNotification = true))
         }
     }
-
-    // ==================== NEWS MANAGEMENT ====================
 
     fun createNews(title: String, summary: String, content: String, isFeatured: Boolean = true) {
         viewModelScope.launch {
@@ -284,8 +251,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun setNewsFeatured(newsId: Int, featured: Boolean) { viewModelScope.launch { newsDao.setFeatured(newsId, featured) } }
     fun setNewsPublished(newsId: Int, published: Boolean) { viewModelScope.launch { newsDao.setPublished(newsId, published) } }
     suspend fun getNewsById(newsId: Int): News? = newsDao.getNewsById(newsId)
-
-    // ==================== USER MANAGEMENT ====================
 
     fun createUser(email: String, password: String, fullName: String, memberNumber: String, role: String, isAdmin: Boolean = false) {
         viewModelScope.launch {
@@ -317,14 +282,25 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     fun promoteToAdmin(userId: Int) { updateUserRole(userId, "admin") }
     fun demoteToMember(userId: Int) { updateUserRole(userId, "member") }
 
-    // ==================== FORUM MODERATION ====================
-
     fun deleteForumPost(post: ForumPost) {
         viewModelScope.launch {
             forumDao.deletePost(post)
-            notificationDao.insertNotification(AdminNotification(type = "alert", title = "Post Deleted", message = "Forum post by ${post.authorName} was removed", isAdminNotification = true))
+            notificationDao.insertNotification(AdminNotification(type = "alert", title = "Post Deleted", message = "Forum post by ${post.author} was removed", isAdminNotification = true))
         }
     }
 
-    fun getForumPostsByUser(userId: Int): Flow<List<ForumPost>> = forumDao.getPostsByUser(userId)
+    fun requestRefund(invoice: Invoice, reason: String) {
+        viewModelScope.launch {
+            invoiceDao.updatePaymentStatus(invoice.id, "Refund Requested")
+            invoiceDao.updateInvoiceNotes(invoice.id, invoice.notes + "\nRefund requested: $reason")
+            notificationDao.insertNotification(AdminNotification(type = "refund", title = "Refund Request", message = "${invoice.userName} requested refund for ${invoice.itemName} (${invoice.price}). Reason: $reason", relatedUserId = invoice.userId, actionRequired = true, actionType = "review_refund", isAdminNotification = true))
+            notificationDao.insertNotification(AdminNotification(type = "refund", title = "Refund Request Submitted", message = "Your refund request for ${invoice.itemName} has been submitted.", relatedUserId = invoice.userId, isAdminNotification = false))
+        }
+    }
 }
+
+
+
+
+
+
