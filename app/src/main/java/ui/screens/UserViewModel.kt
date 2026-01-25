@@ -4,8 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.capstone2.data.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.mindrot.jbcrypt.BCrypt
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
@@ -46,11 +48,17 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     val allForumPosts: Flow<List<ForumPost>> = forumDao.getAllPosts()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val admin = userDao.getUserByEmail("admin@kdfgc.org")
-            if (admin == null) { userDao.insertUser(User(email = "admin@kdfgc.org", password = "admin123", fullName = "KDFGC Admin", memberNumber = "ADMIN001", isAdmin = true, role = "admin")) }
+            if (admin == null) {
+                val hashedPass = BCrypt.hashpw("admin123", BCrypt.gensalt())
+                userDao.insertUser(User(email = "admin@kdfgc.org", password = hashedPass, fullName = "KDFGC Admin", memberNumber = "ADMIN001", isAdmin = true, role = "admin"))
+            }
             val member = userDao.getUserByEmail("member@kdfgc.org")
-            if (member == null) { userDao.insertUser(User(email = "member@kdfgc.org", password = "member123", fullName = "Demo Member", memberNumber = "MEM001", isAdmin = false, role = "member")) }
+            if (member == null) {
+                val hashedPass = BCrypt.hashpw("member123", BCrypt.gensalt())
+                userDao.insertUser(User(email = "member@kdfgc.org", password = hashedPass, fullName = "Demo Member", memberNumber = "MEM001", isAdmin = false, role = "member"))
+            }
             val existingNotifications = notificationDao.getActiveNotifications().first()
             if (existingNotifications.isEmpty()) { addSampleNotifications() }
             val existingCourses = courseDao.getAllCourses().first()
@@ -94,11 +102,11 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun addSampleNotifications() {
         val now = System.currentTimeMillis()
         val sampleMembers = listOf(
-            User(email = "john@example.com", password = "pass123", fullName = "John Doe", memberNumber = "MEM002", isAdmin = false, role = "member"),
-            User(email = "jane@example.com", password = "pass123", fullName = "Jane Smith", memberNumber = "MEM003", isAdmin = false, role = "member"),
-            User(email = "mike@example.com", password = "pass123", fullName = "Mike Johnson", memberNumber = "MEM004", isAdmin = false, role = "moderator"),
-            User(email = "sarah@example.com", password = "pass123", fullName = "Sarah Wilson", memberNumber = "MEM005", isAdmin = false, role = "member"),
-            User(email = "tom@example.com", password = "pass123", fullName = "Tom Brown", memberNumber = "MEM006", isAdmin = false, role = "member")
+            User(email = "john@example.com", password = BCrypt.hashpw("pass123", BCrypt.gensalt()), fullName = "John Doe", memberNumber = "MEM002", isAdmin = false, role = "member"),
+            User(email = "jane@example.com", password = BCrypt.hashpw("pass123", BCrypt.gensalt()), fullName = "Jane Smith", memberNumber = "MEM003", isAdmin = false, role = "member"),
+            User(email = "mike@example.com", password = BCrypt.hashpw("pass123", BCrypt.gensalt()), fullName = "Mike Johnson", memberNumber = "MEM004", isAdmin = false, role = "moderator"),
+            User(email = "sarah@example.com", password = BCrypt.hashpw("pass123", BCrypt.gensalt()), fullName = "Sarah Wilson", memberNumber = "MEM005", isAdmin = false, role = "member"),
+            User(email = "tom@example.com", password = BCrypt.hashpw("pass123", BCrypt.gensalt()), fullName = "Tom Brown", memberNumber = "MEM006", isAdmin = false, role = "member")
         )
         val userIds = mutableListOf<Int>()
         sampleMembers.forEach { user -> val existing = userDao.getUserByEmail(user.email); if (existing == null) { val id = userDao.insertUser(user); userIds.add(id.toInt()) } else { userIds.add(existing.id) } }
@@ -112,11 +120,19 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         ).forEach { notificationDao.insertNotification(it) }
     }
 
-    suspend fun login(email: String, password: String): Boolean { val user = userDao.login(email, password); _currentUser.value = user; return user != null }
+    suspend fun login(email: String, password: String): Boolean {
+        val user = userDao.getUserByEmail(email)
+        if (user != null && BCrypt.checkpw(password, user.password)) {
+            _currentUser.value = user
+            return true
+        }
+        return false
+    }
 
     suspend fun register(email: String, password: String, fullName: String, memberNumber: String): Boolean {
         val existing = userDao.getUserByEmail(email); if (existing != null) return false
-        val userId = userDao.insertUser(User(email = email, password = password, fullName = fullName, memberNumber = memberNumber, isAdmin = false, role = "member"))
+        val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
+        val userId = userDao.insertUser(User(email = email, password = hashedPassword, fullName = fullName, memberNumber = memberNumber, isAdmin = false, role = "member"))
         _currentUser.value = userDao.getUserById(userId.toInt())
         notificationDao.insertNotification(AdminNotification(type = "member", title = "New Member", message = "$fullName registered", relatedUserId = userId.toInt(), actionRequired = true, actionType = "contact_member"))
         return true
@@ -253,10 +269,11 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun getNewsById(newsId: Int): News? = newsDao.getNewsById(newsId)
 
     fun createUser(email: String, password: String, fullName: String, memberNumber: String, role: String, isAdmin: Boolean = false) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val existing = userDao.getUserByEmail(email)
             if (existing == null) {
-                userDao.insertUser(User(email = email, password = password, fullName = fullName, memberNumber = memberNumber, role = role, isAdmin = isAdmin, membershipType = "Approved"))
+                val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
+                userDao.insertUser(User(email = email, password = hashedPassword, fullName = fullName, memberNumber = memberNumber, role = role, isAdmin = isAdmin, membershipType = "Approved"))
                 notificationDao.insertNotification(AdminNotification(type = "member", title = "User Created", message = "$fullName created as $role", isAdminNotification = true))
             }
         }
@@ -298,9 +315,3 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 }
-
-
-
-
-
-
